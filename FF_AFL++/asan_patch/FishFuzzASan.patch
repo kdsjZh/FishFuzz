@@ -1,0 +1,72 @@
+diff --git a/.gitignore b/.gitignore
+index b33fbbf93..fbf41767b 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -6,6 +6,8 @@
+ # as most of those are useless.
+ #==============================================================================#
+ 
++# binutils package
++/binutils
+ #==============================================================================#
+ # File extensions to be ignored anywhere in the tree.
+ #==============================================================================#
+diff --git a/clang/lib/CodeGen/BackendUtil.cpp b/clang/lib/CodeGen/BackendUtil.cpp
+index 52bcd971d..0123753c5 100644
+--- a/clang/lib/CodeGen/BackendUtil.cpp
++++ b/clang/lib/CodeGen/BackendUtil.cpp
+@@ -276,6 +276,13 @@ static void addMemProfilerPasses(const PassManagerBuilder &Builder,
+   PM.add(createModuleMemProfilerLegacyPassPass());
+ }
+ 
++static void addFishFuzzASanPasses(const PassManagerBuilder &Builder,
++                                      legacy::PassManagerBase &PM) {
++
++  PM.add(createFishFuzzASanPass());
++
++}
++
+ static void addAddressSanitizerPasses(const PassManagerBuilder &Builder,
+                                       legacy::PassManagerBase &PM) {
+   const PassManagerBuilderWrapper &BuilderWrapper =
+@@ -730,6 +737,10 @@ void EmitAssemblyHelper::CreatePasses(legacy::PassManager &MPM,
+                            addAddressSanitizerPasses);
+     PMBuilder.addExtension(PassManagerBuilder::EP_EnabledOnOptLevel0,
+                            addAddressSanitizerPasses);
++    PMBuilder.addExtension(PassManagerBuilder::EP_OptimizerLast,
++		           addFishFuzzASanPasses);
++    PMBuilder.addExtension(PassManagerBuilder::EP_EnabledOnOptLevel0,
++		           addFishFuzzASanPasses);
+   }
+ 
+   if (LangOpts.Sanitize.has(SanitizerKind::KernelAddress)) {
+@@ -1298,6 +1309,7 @@ void EmitAssemblyHelper::EmitAssemblyWithNewPassManager(
+                                                      UseOdrIndicator));
+               MPM.addPass(createModuleToFunctionPassAdaptor(
+                   AddressSanitizerPass(CompileKernel, Recover, UseAfterScope)));
++	      // MPM.addPass(FishFuzzASanPass()); 
+             });
+       }
+     };
+diff --git a/llvm/include/llvm/Transforms/Instrumentation/AddressSanitizer.h b/llvm/include/llvm/Transforms/Instrumentation/AddressSanitizer.h
+index 53ad0cbf9..ccaf5032f 100644
+--- a/llvm/include/llvm/Transforms/Instrumentation/AddressSanitizer.h
++++ b/llvm/include/llvm/Transforms/Instrumentation/AddressSanitizer.h
+@@ -132,6 +132,7 @@ private:
+   bool UseOdrIndicator;
+ };
+ 
++ModulePass *createFishFuzzASanPass();
+ // Insert AddressSanitizer (address sanity checking) instrumentation
+ FunctionPass *createAddressSanitizerFunctionPass(bool CompileKernel = false,
+                                                  bool Recover = false,
+diff --git a/llvm/lib/Transforms/Instrumentation/CMakeLists.txt b/llvm/lib/Transforms/Instrumentation/CMakeLists.txt
+index 3b29c3df6..0175d0c95 100644
+--- a/llvm/lib/Transforms/Instrumentation/CMakeLists.txt
++++ b/llvm/lib/Transforms/Instrumentation/CMakeLists.txt
+@@ -1,4 +1,5 @@
+ add_llvm_component_library(LLVMInstrumentation
++  FishFuzzAddressSanitizer.cpp
+   AddressSanitizer.cpp
+   BoundsChecking.cpp
+   CGProfile.cpp
