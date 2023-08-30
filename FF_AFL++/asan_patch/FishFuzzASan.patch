@@ -60,7 +60,7 @@ index 53ad0cbf9968..576712d6bb08 100644
 +    : public PassInfoMixin<FishFuzzASanPass> {
 +public:
 +  explicit FishFuzzASanPass();
-+  PreservedAnalyses run(Module &M, ModuleAnalysisManager &AM));
++  PreservedAnalyses run(Module &M, ModuleAnalysisManager &AM);
 +  static bool isRequired() { return true; }
 +
 +};
