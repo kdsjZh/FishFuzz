@@ -24,44 +24,12 @@ std::vector<u32> seed_length;
 
 /* initialize loading static maps */
 
-void initialized_bug_map() {
-
-  std::string temporary_dir = std::getenv("TMP_DIR");
-  std::map<std::string, u32> func2id;
-  std::ifstream fi(temporary_dir + "/funcid.csv");
-  if (fi.is_open()) {
-    std::string line;
-    while (getline(fi, line)) {
-      
-      std::size_t dis_pos = line.find(",");
-      std::string fname = line.substr(dis_pos + 1, line.length() - dis_pos);
-      std::string idx_str = line.substr(0, dis_pos);
-      func2id.emplace(fname, atoi(idx_str.c_str()));
-      // std::cout << fname << " : " << idx_str << "\n";
-    }
-  }
-
-  /* initialized vuln functions */
-  std::ifstream bfunc(temporary_dir + "/vulnfunc.csv", std::ifstream::binary);
-  if (bfunc.is_open()) {
-    std::string line;
-    while (getline(bfunc, line)) {
-      auto biter = func2id.find(line);
-      if (biter != func2id.end()) {
-        if (biter->second < FUNC_SIZE) unvisited_func_map[biter->second] = 1;
-      }
-      // else PFATAL("Failed found func %s.", line.c_str());
-    }
-  }
-  
-}
-
 void initialized_dist_map() {
 
   Json::Value shortest_dist_map;
   Json::Reader reader;
   std::string temporary_dir = std::getenv("TMP_DIR"), errs;
-  std::ifstream dist_map(temporary_dir + "/runtimes/calldst.json", std::ifstream::binary);
+  std::ifstream dist_map(temporary_dir + "/calldst.json", std::ifstream::binary);
   
   if (!reader.parse(dist_map, shortest_dist_map, false))
     PFATAL("Failed loading dist map !");
@@ -81,8 +49,8 @@ void initialized_dist_map() {
   
   }
 
-  initialized_bug_map();
-
+  for (int i = 0; i < FUNC_SIZE; i ++) unvisited_func_map[i] = 1;
+  
 }
 
 
