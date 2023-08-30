@@ -61,23 +61,24 @@
 
 using namespace llvm;
 
-namespace {
+struct FishFuzzASan {
 
-  class FishFuzzASanPass : public ModulePass {
+  FishFuzzASan(Module &M) {
+    C = &(M.getContext());
+  }
 
-    public:
+  bool instrumentModule(Module &M);
+  size_t getInstrumentId(char *IdFile, size_t NewSize);
+  bool hasSanInstrument(BasicBlock &BB);
+  bool isBlacklisted(const Function *F);
 
-      static char ID;
-      FishFuzzASanPass() : ModulePass(ID) { }
+private:
+  LLVMContext *C;
 
-      bool runOnModule(Module &M) override;
-
-  };
-
-}
+};
 
 
-size_t getInstrumentId(char *IdFile, size_t NewSize) {
+size_t FishFuzzASan::getInstrumentId(char *IdFile, size_t NewSize) {
 
   int fd = open(IdFile, O_RDWR, 0666);
   if (fd < 0) {perror("failed open fd:"); exit(-1);}
@@ -132,7 +133,7 @@ size_t getInstrumentId(char *IdFile, size_t NewSize) {
 
 }
 
-bool hasSanInstrument(BasicBlock &BB) {
+bool FishFuzzASan::hasSanInstrument(BasicBlock &BB) {
   bool ExistsSan = false;
   for (Instruction& Inst : BB.getInstList()) {
     if (auto Call = dyn_cast<CallInst>(&Inst)) {
@@ -148,7 +149,7 @@ bool hasSanInstrument(BasicBlock &BB) {
   return ExistsSan;
 }
 
-static bool isBlacklisted(const Function *F) {
+bool FishFuzzASan::isBlacklisted(const Function *F) {
   static const SmallVector<std::string, 8> Blacklist = {
     "asan.",
     "llvm.",
@@ -170,10 +171,11 @@ static bool isBlacklisted(const Function *F) {
   return false;
 }
 
-char FishFuzzASanPass::ID = 0;
+
+// char FishFuzzASanPass::ID = 0;
 
 
-bool FishFuzzASanPass::runOnModule(Module &M) {
+bool FishFuzzASan::instrumentModule(Module &M) {
 
   LLVMContext &C = M.getContext();
 
@@ -294,11 +296,49 @@ bool FishFuzzASanPass::runOnModule(Module &M) {
 
 }
 
+
+/* define the legalcy pass */
+class FishFuzzASanLegacyPass : public ModulePass {
+public:
+  static char ID;
+
+  FishFuzzASanLegacyPass() : ModulePass(ID) { }
+
+  StringRef getPassName() const override {
+    return "FishFuzzASanLegacyPass";
+  }
+
+  bool runOnModule(Module &M) override {
+
+    FishFuzzASan FFASan(M);
+    return FFASan.instrumentModule(M);
+  }
+
+};
+
+char FishFuzzASanLegacyPass::ID = 0;
+
 ModulePass *llvm::createFishFuzzASanPass() {
 
-  return new FishFuzzASanPass();
+  return new FishFuzzASanLegacyPass();
   
 }
+
+/* define the new pass manager */
+
+/* add registry in llvm/lib/Passes/PassRegistry.def */
+
+FishFuzzASanPass::FishFuzzASanPass() {}
+
+PreservedAnalyses FishFuzzASanPass::run(Module &M, AnalysisManager<Module> &AM) {
+
+  FishFuzzASan FFASan(M);
+  if (FFASan.instrumentModule(M))
+    return PreservedAnalyses::none();
+  return PreservedAnalyses::all();
+
+}
+
 /*
   to be added to BackendUtils.cpp
 
@@ -313,6 +353,15 @@ static void addFishFuzzASanPasses(const PassManagerBuilder &Builder,
   to be added to AddressSanitizer.h
 
 ModulePass *createFishFuzzASanPass();
+
+class FishFuzzASanPass
+    : public PassInfoMixin<FishFuzzASanPass> {
+public:
+  explicit FishFuzzASanPass();
+  PreservedAnalyses run(Module &M);
+  static bool isRequired() { return true; }
+
+};
 */
 
 /*
