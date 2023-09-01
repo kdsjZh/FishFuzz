@@ -12,10 +12,18 @@ index b33fbbf93237..fbf41767b7e7 100644
  # File extensions to be ignored anywhere in the tree.
  #==============================================================================#
 diff --git a/clang/lib/CodeGen/BackendUtil.cpp b/clang/lib/CodeGen/BackendUtil.cpp
-index 52bcd971dc8c..5bbed352d76d 100644
+index 52bcd971dc8c..66f37ac50b33 100644
 --- a/clang/lib/CodeGen/BackendUtil.cpp
 +++ b/clang/lib/CodeGen/BackendUtil.cpp
-@@ -276,6 +276,13 @@ static void addMemProfilerPasses(const PassManagerBuilder &Builder,
+@@ -84,6 +84,7 @@
+ #include "llvm/Transforms/Utils/NameAnonGlobals.h"
+ #include "llvm/Transforms/Utils/SymbolRewriter.h"
+ #include "llvm/Transforms/Utils/UniqueInternalLinkageNames.h"
++#include "llvm/Analysis/CallPrinter.h"
+ #include <memory>
+ using namespace clang;
+ using namespace llvm;
+@@ -276,6 +277,13 @@ static void addMemProfilerPasses(const PassManagerBuilder &Builder,
    PM.add(createModuleMemProfilerLegacyPassPass());
  }
  
@@ -29,7 +37,7 @@ index 52bcd971dc8c..5bbed352d76d 100644
  static void addAddressSanitizerPasses(const PassManagerBuilder &Builder,
                                        legacy::PassManagerBase &PM) {
    const PassManagerBuilderWrapper &BuilderWrapper =
-@@ -730,6 +737,10 @@ void EmitAssemblyHelper::CreatePasses(legacy::PassManager &MPM,
+@@ -730,6 +738,10 @@ void EmitAssemblyHelper::CreatePasses(legacy::PassManager &MPM,
                             addAddressSanitizerPasses);
      PMBuilder.addExtension(PassManagerBuilder::EP_EnabledOnOptLevel0,
                             addAddressSanitizerPasses);
@@ -40,16 +48,49 @@ index 52bcd971dc8c..5bbed352d76d 100644
    }
  
    if (LangOpts.Sanitize.has(SanitizerKind::KernelAddress)) {
-@@ -1298,6 +1309,7 @@ void EmitAssemblyHelper::EmitAssemblyWithNewPassManager(
+@@ -1298,6 +1310,8 @@ void EmitAssemblyHelper::EmitAssemblyWithNewPassManager(
                                                       UseOdrIndicator));
                MPM.addPass(createModuleToFunctionPassAdaptor(
                    AddressSanitizerPass(CompileKernel, Recover, UseAfterScope)));
 +              MPM.addPass(FishFuzzASanPass());
++              MPM.addPass(CallGraphDOTPrinterPass());
              });
        }
      };
+diff --git a/llvm/include/llvm/Analysis/CallPrinter.h b/llvm/include/llvm/Analysis/CallPrinter.h
+index 8d4159f3ddc0..8fe8da71640e 100644
+--- a/llvm/include/llvm/Analysis/CallPrinter.h
++++ b/llvm/include/llvm/Analysis/CallPrinter.h
+@@ -14,6 +14,10 @@
+ #ifndef LLVM_ANALYSIS_CALLPRINTER_H
+ #define LLVM_ANALYSIS_CALLPRINTER_H
+ 
++#include "llvm/IR/Function.h"
++#include "llvm/IR/Module.h"
++#include "llvm/IR/PassManager.h"
++
+ namespace llvm {
+ 
+ class ModulePass;
+@@ -21,6 +25,16 @@ class ModulePass;
+ ModulePass *createCallGraphViewerPass();
+ ModulePass *createCallGraphDOTPrinterPass();
+ 
++class CallGraphDOTPrinterPass
++    : public PassInfoMixin<CallGraphDOTPrinterPass> {
++public:
++  explicit CallGraphDOTPrinterPass();
++  PreservedAnalyses run(Module &M, ModuleAnalysisManager &AM);
++
++  static bool isRequired() { return true; }
++
++};
++
+ } // end namespace llvm
+ 
+ #endif
 diff --git a/llvm/include/llvm/Transforms/Instrumentation/AddressSanitizer.h b/llvm/include/llvm/Transforms/Instrumentation/AddressSanitizer.h
-index 53ad0cbf9968..576712d6bb08 100644
+index 53ad0cbf9968..0646fbdc70db 100644
 --- a/llvm/include/llvm/Transforms/Instrumentation/AddressSanitizer.h
 +++ b/llvm/include/llvm/Transforms/Instrumentation/AddressSanitizer.h
 @@ -132,6 +132,16 @@ private:
@@ -69,6 +110,48 @@ index 53ad0cbf9968..576712d6bb08 100644
  // Insert AddressSanitizer (address sanity checking) instrumentation
  FunctionPass *createAddressSanitizerFunctionPass(bool CompileKernel = false,
                                                   bool Recover = false,
+diff --git a/llvm/lib/Analysis/CallPrinter.cpp b/llvm/lib/Analysis/CallPrinter.cpp
+index 872a91ad7cbf..e941eb912917 100644
+--- a/llvm/lib/Analysis/CallPrinter.cpp
++++ b/llvm/lib/Analysis/CallPrinter.cpp
+@@ -307,3 +307,37 @@ ModulePass *llvm::createCallGraphViewerPass() { return new CallGraphViewer(); }
+ ModulePass *llvm::createCallGraphDOTPrinterPass() {
+   return new CallGraphDOTPrinter();
+ }
++
++// DOT Printer for new pass manager
++
++CallGraphDOTPrinterPass::CallGraphDOTPrinterPass() {}
++
++
++PreservedAnalyses CallGraphDOTPrinterPass::run(Module &M,
++                                               ModuleAnalysisManager &AM) {
++  FunctionAnalysisManager &FAM =
++      AM.getResult<FunctionAnalysisManagerModuleProxy>(M).getManager();
++
++  auto LookupBFI = [&FAM](Function &F) {
++    return &FAM.getResult<BlockFrequencyAnalysis>(F);
++  };
++
++  std::string Filename;
++  Filename = (std::string(M.getModuleIdentifier()) + ".callgraph.dot");
++
++  std::error_code EC;
++  raw_fd_ostream File(Filename, EC, sys::fs::F_Text);
++
++  CallGraph CG(M);
++  CallGraphDOTInfo CFGInfo(&M, &CG, LookupBFI);
++
++  if (!EC)
++    WriteGraph(File, &CFGInfo);
++  else
++    errs() << "  error opening file for writing!";
++  errs() << "\n";
++
++  // doCallGraphDOTPrinting(M, LookupBFI);
++
++  return PreservedAnalyses::all();
++}
 diff --git a/llvm/lib/Transforms/Instrumentation/CMakeLists.txt b/llvm/lib/Transforms/Instrumentation/CMakeLists.txt
 index 3b29c3df6429..0175d0c9564c 100644
 --- a/llvm/lib/Transforms/Instrumentation/CMakeLists.txt
