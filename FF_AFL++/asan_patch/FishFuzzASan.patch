@@ -111,10 +111,21 @@ index 53ad0cbf9968..0646fbdc70db 100644
  FunctionPass *createAddressSanitizerFunctionPass(bool CompileKernel = false,
                                                   bool Recover = false,
 diff --git a/llvm/lib/Analysis/CallPrinter.cpp b/llvm/lib/Analysis/CallPrinter.cpp
-index 872a91ad7cbf..e941eb912917 100644
+index 872a91ad7cbf..1099329166f3 100644
 --- a/llvm/lib/Analysis/CallPrinter.cpp
 +++ b/llvm/lib/Analysis/CallPrinter.cpp
-@@ -307,3 +307,37 @@ ModulePass *llvm::createCallGraphViewerPass() { return new CallGraphViewer(); }
+@@ -24,6 +24,10 @@
+ #include "llvm/ADT/DenseMap.h"
+ #include "llvm/ADT/SmallSet.h"
+ 
++#include <stdlib.h>
++#include <fstream>
++#include <iostream>
++
+ using namespace llvm;
+ 
+ // This option shows static (relative) call counts.
+@@ -307,3 +311,42 @@ ModulePass *llvm::createCallGraphViewerPass() { return new CallGraphViewer(); }
  ModulePass *llvm::createCallGraphDOTPrinterPass() {
    return new CallGraphDOTPrinter();
  }
@@ -133,8 +144,13 @@ index 872a91ad7cbf..e941eb912917 100644
 +    return &FAM.getResult<BlockFrequencyAnalysis>(F);
 +  };
 +
-+  std::string Filename;
-+  Filename = (std::string(M.getModuleIdentifier()) + ".callgraph.dot");
++  std::string TempDir, Filename;
++  if (getenv("FF_TMP_DIR")) {
++
++    TempDir = getenv("FF_TMP_DIR");
++    Filename = TempDir + "/cg/" + std::string(M.getModuleIdentifier()) + ".callgraph.dot";
++    
++  } else perror("Please set the FF_TMP_DIR before start!\n");
 +
 +  std::error_code EC;
 +  raw_fd_ostream File(Filename, EC, sys::fs::F_Text);

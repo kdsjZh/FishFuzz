@@ -51,9 +51,6 @@
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
 #include "llvm/Transforms/Instrumentation/AddressSanitizer.h"
 
-
-#define TEMPORARY_FUNC_ID "/tmp/fishfuzz/fid"
-#define TEMPORARY_TARG_ID "/tmp/fishfuzz/targid"
 #define FUNC_SIZE         16 * 1024
 
 #define DEBUG_TYPE "ff-asan"
@@ -68,7 +65,7 @@ struct FishFuzzASan {
   }
 
   bool instrumentModule(Module &M);
-  size_t getInstrumentId(char *IdFile, size_t NewSize);
+  size_t getInstrumentId(const char *IdFile, size_t NewSize);
   bool hasSanInstrument(BasicBlock &BB);
   bool isBlacklisted(const Function *F);
 
@@ -78,7 +75,7 @@ private:
 };
 
 
-size_t FishFuzzASan::getInstrumentId(char *IdFile, size_t NewSize) {
+size_t FishFuzzASan::getInstrumentId(const char *IdFile, size_t NewSize) {
 
   int fd = open(IdFile, O_RDWR, 0666);
   if (fd < 0) {perror("failed open fd:"); exit(-1);}
@@ -211,9 +208,19 @@ bool FishFuzzASan::instrumentModule(Module &M) {
   
   }
 
+  std::string TempDir, FidFilename, TempFuncId, TempTargId;
+  if (getenv("FF_TMP_DIR")) {
+
+    TempDir = getenv("FF_TMP_DIR");
+    FidFilename = TempDir + "/fid/" + std::string(M.getModuleIdentifier()) + ".fid.txt";
+    TempFuncId = TempDir + "/idlog/fid";
+    TempTargId = TempDir + "/idlog/targid";
+    
+  } else perror("Please set the FF_TMP_DIR before start!\n");
+
   /* Obtain the range of sanitizer ids */
 
-  beginSanId = getInstrumentId(TEMPORARY_TARG_ID, vulnBlocks);
+  beginSanId = getInstrumentId(TempTargId.c_str(), vulnBlocks);
   curSanId = beginSanId;
 
   
@@ -264,7 +271,11 @@ bool FishFuzzASan::instrumentModule(Module &M) {
   
   }
 
-  beginFuncId = getInstrumentId(TEMPORARY_FUNC_ID, numFuncs);
+  std::ofstream FuncMap(FidFilename, std::ofstream::out | std::ofstream::app);
+
+  if (!FuncMap.is_open()) { perror("Cannot open FuncMap :"); }
+
+  beginFuncId = getInstrumentId(TempFuncId.c_str(), numFuncs);
   curFuncId = beginFuncId;
 
   for (auto &F : M) {
@@ -282,10 +293,16 @@ bool FishFuzzASan::instrumentModule(Module &M) {
 
     FuncIRB.CreateStore(ConstantInt::get(Int8Ty, 1), FuncPtrIdx)
         ->setMetadata(M.getMDKindID("nosanitize"), MDNode::get(C, None));
+
+    /* write a log for modulename, fname, fid */
+    
+    FuncMap << F.getName().str() << "," << curFuncId << "\n";
     
     curFuncId += 1;
 
   }
+
+  FuncMap.close();
   
 
   /* Say something nice. */
