@@ -668,8 +668,6 @@ source-only: all
 ifneq "$(SYS)" "Darwin"
 	-$(MAKE) -f GNUmakefile.gcc_plugin
 endif
-	-$(MAKE) -C dyncfg/ clean
-	-$(MAKE) -C dyncfg/
 	-$(MAKE) -C utils/libdislocator
 	-$(MAKE) -C utils/libtokencap
 	# -$(MAKE) -C utils/plot_ui
