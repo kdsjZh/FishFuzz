@@ -35,6 +35,15 @@ def find_files(filename, search_path, mode):
                 return os.path.join(root, filename)
     return result
 
+def prepare_tmp_files(tmp_dir):
+    if not os.path.isdir(tmp_dir) or os.path.exists(tmp_dir):
+        os.mkdir(tmp_dir)
+    os.mkdir('%s/idlog' % (tmp_dir))
+    os.mkdir('%s/cg' % (tmp_dir))
+    os.mkdir('%s/fid' % (tmp_dir))
+    os.system('touch %s/idlog/fid %s/idlog/targid' % (tmp_dir, tmp_dir))
+
+
 
 def prepare_build_environment():
     """Set environment variables used to build targets for AFL-based
@@ -44,13 +53,17 @@ def prepare_build_environment():
     utils.append_flags('CFLAGS', cflags)
     utils.append_flags('CXXFLAGS', cflags)
 
-    os.environ['CC'] = '/FishFuzz/ff-all-in-one'
-    os.environ['CXX'] = '/FishFuzz/ff-all-in-one++'
-    os.environ['FF_DRIVER_NAME'] = os.getenv('FUZZ_TARGET')
-    os.environ['FUZZER_LIB'] = '/libAFL.a'
+    os.environ['CC'] = '/FishFuzz/afl-cc'
+    os.environ['CXX'] = '/FishFuzz/afl-c++'
+    os.environ['FUZZER_LIB'] = '/FishFuzz/afl_driver.o'#'/libAFLDriver.a'
+    os.environ['TMP_DIR'] = os.environ['OUT'] + '/TEMP'
+    os.environ['FF_TMP_DIR'] = os.environ['OUT'] + '/TEMP'
+    prepare_tmp_files(os.environ['TMP_DIR'])
 
     os.environ['AFL_QUIET'] = '1'
-    os.environ['AFL_LLVM_USE_TRACE_PC'] = '1'
+    # os.environ['AFL_LLVM_USE_TRACE_PC'] = '1'
+    os.environ['AFL_USE_ASAN'] = '1'
+
 
 
 def build():
@@ -63,26 +76,19 @@ def build():
     print('[post_build] Copying afl-fuzz to $OUT directory')
     # Copy out the afl-fuzz binary as a build artifact.
     shutil.copy('/FishFuzz/afl-fuzz', os.environ['OUT'])
-    print(os.environ['FF_DRIVER_NAME'])
     os.environ['AFL_CC'] = 'clang-12'
     os.environ['AFL_CXX'] = 'clang++-12'
-    bin_fuzz_dst = os.environ['OUT'] + '/' + os.environ['FF_DRIVER_NAME']
-    bin_fuzz_src = find_files(os.environ['FF_DRIVER_NAME'] + '.fuzz', '/', 0)
-    os.system('find / -name "*' + os.environ['FF_DRIVER_NAME'] +
-              '*" 2> /dev/null')
-    if bin_fuzz_src:
-        shutil.copy(bin_fuzz_src, bin_fuzz_dst)
-    else:
-        #print('NOT FOUND: ' + f'%s.fuzz' % (os.environ['FF_DRIVER_NAME']))
-        sys.exit(1)
+    
     tmp_dir_dst = os.environ['OUT'] + '/TEMP'
-    tmp_dir_src = find_files('TEMP_' + os.environ['FF_DRIVER_NAME'], '/', 1)
-    if tmp_dir_src:
-        shutil.copytree(tmp_dir_src, tmp_dir_dst)
-    else:
-        #print('NOT FOUND: ' + f'TEMP_%s' % (os.environ['FF_DRIVER_NAME']))
-        sys.exit(1)
-    #print('done')
+    print('[post_build] generating distance files')
+    # python3 /Fish++/distance/match_function.py -i $FF_TMP_DIR
+    # python3 /Fish++/distance/merge_callgraph.py -i $FF_TMP_DIR
+    # python3 /Fish++/distance/calculate_distance.py -i $FF_TMP_DIR
+    os.system('python3 /FishFuzz/distance/match_function.py -i %s' % (tmp_dir_dst))
+    os.system('python3 /FishFuzz/distance/merge_callgraph.py -i %s' % (tmp_dir_dst))
+    os.system('python3 /FishFuzz/distance/calculate_distance.py -i %s' % (tmp_dir_dst))
+
+    print('done')
 
 
 def get_stats(output_corpus, fuzzer_log):  # pylint: disable=unused-argument
