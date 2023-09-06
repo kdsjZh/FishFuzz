@@ -68,6 +68,7 @@ struct FishFuzzASan {
   size_t getInstrumentId(const char *IdFile, size_t NewSize);
   bool hasSanInstrument(BasicBlock &BB);
   bool isBlacklisted(const Function *F);
+  std::string encodePathStr(std::string Path);
 
 private:
   LLVMContext *C;
@@ -171,6 +172,19 @@ bool FishFuzzASan::isBlacklisted(const Function *F) {
 
 // char FishFuzzASanPass::ID = 0;
 
+std::string FishFuzzASan::encodePathStr(std::string Path) {
+
+  std::string from = "/", to = ".";
+  size_t pos = 0;
+  while ((pos = Path.find(from)) != std::string::npos) {
+
+    if (pos == 0) Path.erase(pos, 1);
+    else Path.replace(pos, 1, to);
+  
+  }
+  return Path;
+
+}
 
 bool FishFuzzASan::instrumentModule(Module &M) {
 
@@ -212,7 +226,7 @@ bool FishFuzzASan::instrumentModule(Module &M) {
   if (getenv("FF_TMP_DIR")) {
 
     TempDir = getenv("FF_TMP_DIR");
-    FidFilename = TempDir + "/fid/" + std::string(M.getModuleIdentifier()) + ".fid.txt";
+    FidFilename = TempDir + "/fid/" + encodePathStr(std::string(M.getModuleIdentifier())) + ".fid.txt";
     TempFuncId = TempDir + "/idlog/fid";
     TempTargId = TempDir + "/idlog/targid";
     
