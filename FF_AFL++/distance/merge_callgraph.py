@@ -9,7 +9,9 @@ import networkx as nx
 
 
 __black_module_list = [
-  'conftest'
+  'conftest',
+  'CMakeCCompilerId',
+  'CMakeCXXCompilerId',
 ]
 
 __prefix_name = {
@@ -30,6 +32,11 @@ def remove_prefix(file_name, type_prefix):
     return ''
   return module_name
 
+def __is_valid_nodename(node_name):
+  if node_name.startswith('Node0x'):
+    return 1
+  return 0
+
 def main():
   parser = argparse.ArgumentParser()
   parser.add_argument('-i', required=True, help="Path to whole Temporary directory.")
@@ -41,9 +48,14 @@ def main():
     module_name = remove_prefix(cg, 'cg')
     if not module_name:
       continue
-    print ("[*] Updating callgraph from %s..." % (remove_prefix(cg, 'cg')))
+    print ("[*] Updating callgraph from %s..." % (module_name))
     G.update(nx.DiGraph(nx.drawing.nx_pydot.read_dot('%s/cg/%s' % (args.i, cg))))
 
+  node_list = list(G.nodes().keys())
+  for node_name in node_list:
+    if not __is_valid_nodename(node_name):
+      G.remove_node(node_name)
+  
   with open('%s/callgraph.dot' % (args.i), 'w') as f:
     nx.drawing.nx_pydot.write_dot(G, f)
   
