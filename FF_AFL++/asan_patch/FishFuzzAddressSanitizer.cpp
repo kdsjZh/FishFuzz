@@ -248,13 +248,9 @@ bool FishFuzzASan::instrumentModule(Module &M) {
 
     LoadInst *ReachMapPtr = ReachIRB.CreateLoad(AFLMapPtr);
     ReachMapPtr->setMetadata(M.getMDKindID("nosanitize"), MDNode::get(C, None));
-    Value *ReachCmpPtrIdx = ReachIRB.CreateGEP(ReachMapPtr, ConstantInt::get(Int32Ty, FUNC_SIZE + (curSanId >> 2)));
+    Value *ReachCmpPtrIdx = ReachIRB.CreateGEP(ReachMapPtr, ConstantInt::get(Int32Ty, FUNC_SIZE + curSanId));
 
-    LoadInst *ReachCounter = ReachIRB.CreateLoad(Int8Ty, ReachCmpPtrIdx);
-    ReachCounter->setMetadata(M.getMDKindID("nosanitize"), MDNode::get(C, None));
-
-    Value *ReachIncr = ReachIRB.CreateOr(ReachCounter, ConstantInt::get(Int8Ty, 1 << ((curSanId & 0x3) * 2 + 1)));
-    ReachIRB.CreateStore(ReachIncr, ReachCmpPtrIdx)
+    ReachIRB.CreateStore(ConstantInt::get(Int8Ty, 1), ReachCmpPtrIdx)
       ->setMetadata(M.getMDKindID("nosanitize"), MDNode::get(C, None));   
 
     /* Instrument the Sanitizer Trigger Info */
@@ -264,13 +260,9 @@ bool FishFuzzASan::instrumentModule(Module &M) {
 
     LoadInst *SanMapPtr = SanIRB.CreateLoad(PointerType::get(Int8Ty, 0), AFLMapPtr);
     SanMapPtr->setMetadata(M.getMDKindID("nosanitize"), MDNode::get(C, None));
-    Value *SanCmpPtrIdx = SanIRB.CreateGEP(SanMapPtr, ConstantInt::get(Int32Ty, FUNC_SIZE + (curSanId >> 2)));
+    Value *SanCmpPtrIdx = SanIRB.CreateGEP(SanMapPtr, ConstantInt::get(Int32Ty, FUNC_SIZE + curSanId));
 
-    LoadInst *SanCounter = SanIRB.CreateLoad(Int8Ty, SanCmpPtrIdx);
-    SanCounter->setMetadata(M.getMDKindID("nosanitize"), MDNode::get(C, None));
-
-    Value *SanIncr = SanIRB.CreateOr(SanCounter, ConstantInt::get(Int8Ty, 1 << ((curSanId & 0x3) * 2)));
-    SanIRB.CreateStore(SanIncr, SanCmpPtrIdx)
+    SanIRB.CreateStore(ConstantInt::get(Int8Ty, 2), SanCmpPtrIdx)
         ->setMetadata(M.getMDKindID("nosanitize"), MDNode::get(C, None));
 
     curSanId += 1;

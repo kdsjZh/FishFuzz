@@ -999,39 +999,19 @@ void update_fishfuzz_states(afl_state_t *afl, u8* fish_map) {
   }
 
   u8 *targets_map = fish_map + FUNC_SIZE;
-  for (u32 i = 0; i < VMAP_SIZE; i ++) {
+  for (u32 i = 0; i < VMAP_COUNT; i ++) {
 
     if (unlikely(targets_map[i])) {
 
-      for (u32 k = 0; k < 4; k ++) {
-        // printf("trigger %x, %x, %x\n", i, k, i * 4 + k);
-        if (targets_map[i] & (1 << (k * 2))) {
+      afl->reach_bits_count[i] ++;
 
-          if (!afl->trigger_bits_count[i * 4 + k]) {
-
-            afl->last_trigger_time = get_cur_time();
-            afl->current_targets_triggered ++;
-
-          }
-          afl->trigger_bits_count[i * 4 + k] ++;
-
-        }
-        if (targets_map[i] & (1 << (k * 2 + 1))) {
-          // printf("reach %x, %x, %x\n", i, k, i * 4 + k);
-          if (!afl->reach_bits_count[i * 4 + k]) {
-
-            afl->last_reach_time = get_cur_time();
-            afl->current_targets_reached ++;
-
-          }
-          afl->reach_bits_count[i * 4 + k] ++;
-
-        }
+      if (unlikely(targets_map[i] == 2)) {
         
+        afl->trigger_bits_count[i] ++;
+
       }
-
+      
     }
-
   }
 
 }

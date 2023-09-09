@@ -519,7 +519,7 @@ void compress_target(u8* dst, u8* src) {
 
   for (u32 i = 0; i < VMAP_COUNT; i ++) { 
     
-    if (src[i >> 2] & (1 << ((i & 3) * 2 + 1))) dst[i >> 3] |= (1 << (i & 7));
+    if (src[i]) dst[i >> 3] |= (1 << (i & 7));
     
   }
 

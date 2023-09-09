@@ -443,13 +443,13 @@
 
 /* For FishFuzz we provide function/sanitizer instrumentation */
 // #define FUNC_SIZE_POW2 14
-#define FUNC_SIZE_POW2 14
+#define FUNC_SIZE_POW2 16
 #define FUNC_SIZE (1U << FUNC_SIZE_POW2)
 
 // #define VMAP_COUNT_POW2 16
-#define VMAP_COUNT_POW2 18
+#define VMAP_COUNT_POW2 20
 #define VMAP_COUNT (1U << VMAP_COUNT_POW2)
-#define VMAP_SIZE  (VMAP_COUNT / 4)
+#define VMAP_SIZE  VMAP_COUNT
 
 #define FISH_SIZE (FUNC_SIZE + VMAP_SIZE)
 
