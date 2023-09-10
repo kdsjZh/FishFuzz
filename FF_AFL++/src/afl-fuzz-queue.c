@@ -1089,13 +1089,14 @@ void cull_queue(afl_state_t *afl) {
       write_fishfuzz_log(afl, INTRA_FUNC_EXPLORE, INTER_FUNC_EXPLORE);
     }
     else {
-
-      if (get_cur_time() - afl->last_reach_time > INTRA_EXPLORE_TLIMIT || should_skip) {
+      // for intra-explore, we could accept non pending interesting seeds
+      if (get_cur_time() - afl->last_reach_time > INTRA_EXPLORE_TLIMIT) {
         afl->target_changed = 1;
         afl->last_trigger_time = get_cur_time();
         afl->fish_seed_selection = TARGET_EXPLOIT;
         write_fishfuzz_log(afl, INTRA_FUNC_EXPLORE, TARGET_EXPLOIT);
       }
+
     }
   }
   else if (afl->fish_seed_selection == TARGET_EXPLOIT) {
