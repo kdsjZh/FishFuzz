@@ -539,6 +539,7 @@ int main(int argc, char **argv_orig, char **envp) {
 
   afl->shmem_testcase_mode = 1;  // we always try to perform shmem fuzzing
   afl->shm.fishfuzz_mode = 1;
+  afl->last_explored_item = 0;
 
   while (
       (opt = getopt(

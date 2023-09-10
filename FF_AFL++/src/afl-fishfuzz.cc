@@ -92,55 +92,74 @@ void update_bitmap_score_explore(afl_state_t *afl) {
   
   }
 
-  for (u32 i = 0; i < FUNC_SIZE; i ++) {
-    // there are unvisited label in this function and it's not touched yet
-    if (!unvisited_func_map[i] || afl->virgin_funcs[i]) continue;
+  // we only explore each seeds once, so if there are no new seeds, we don't update
+  if (afl->last_explored_item == afl->queued_items && afl->last_explored_item) return ;
 
-    if (afl->top_rated_explore[i]) {
-      // if (top_rated_explore[i]->favored) 
-      //   top_rated_explore[i]->favored = 0;
-      if (afl->top_rated_explore[i]->fuzz_level) 
-        afl->top_rated_explore[i] = NULL;
-    }
-    // iterate over queue to find a seed with shortest distance
-    for (u32 sid = 0; sid < afl->queued_items; sid ++) {
+  for (u32 src_func = 0; src_func < FUNC_SIZE; src_func ++) {
+
+    if (!unvisited_func_map[src_func] || afl->virgin_funcs[src_func]) continue;
+
+    // now we don't remove explored functions 
+    // if (afl->top_rated_explore[src_func]) {
+
+    //   if (afl->top_rated_explore[src_func]->fuzz_level) afl->top_rated_explore[src_func] = NULL;
+    
+    // }
+    // find the closest seed 
+    for (u32 sid = afl->last_explored_item; sid < afl->queued_items; sid ++) {
+
       struct queue_entry *q = afl->queue_buf[sid];
-      // skip fuzzed seed or initial seed when its' trace_func not updated
+
       if (q->fuzz_level || !q->trace_func) continue;
+
       u32 fexp_score = 0, shortest_dist = UNREACHABLE_DIST;
       u64 fav_factor = q->len * q->exec_us;
-      // iterate over shortest map 
-      for (auto iter = func_dist_map[i].begin(); iter != func_dist_map[i].end(); iter ++) {
-        if (q->trace_func[iter->first])
-          if (iter->second < shortest_dist)
-            shortest_dist = iter->second;
+
+      for (auto iter = func_dist_map[src_func].begin(); iter != func_dist_map[src_func].end(); iter ++) {
+      
+        if (q->trace_func[iter->first]) {
+
+          if (iter->second < shortest_dist) shortest_dist = iter->second;
+        
+        }
+      
       }
 
       if (shortest_dist != UNREACHABLE_DIST) fexp_score = shortest_dist * 100;
 
       if (fexp_score) {
-        if (!afl->top_rated_explore[i]) {
-          write_function_log(afl, afl->top_rated_explore[i], q, afl->shortest_dist[i], fexp_score / 100, i);
-          afl->top_rated_explore[i] = q;
-          afl->shortest_dist[i] = fexp_score;
+
+        if (!afl->top_rated_explore[src_func]) {
+        
+          // write_function_log(afl, afl->top_rated_explore[src_func], q, afl->shortest_dist[src_func], fexp_score / 100, i);
+          afl->top_rated_explore[src_func] = q; afl->shortest_dist[src_func] = fexp_score;
+        
         }
         else {
-          if (fexp_score < afl->shortest_dist[i]) {
-            write_function_log(afl, afl->top_rated_explore[i], q, afl->shortest_dist[i], fexp_score / 100, i);
-            afl->top_rated_explore[i] = q;
-            afl->shortest_dist[i] = fexp_score;
+        
+          if (fexp_score < afl->shortest_dist[src_func]) {
+            
+            // write_function_log(afl, afl->top_rated_explore[src_func], q, afl->shortest_dist[src_func], fexp_score / 100, i);
+            afl->top_rated_explore[src_func] = q; afl->shortest_dist[src_func] = fexp_score;
+
           }
-          if (fexp_score == afl->shortest_dist[i] && 
-              fav_factor < afl->top_rated_explore[i]->exec_us * afl->top_rated_explore[i]->len) {
-            write_function_log(afl, afl->top_rated_explore[i], q, afl->shortest_dist[i], fexp_score / 100, i);
-            afl->top_rated_explore[i] = q;
-            afl->shortest_dist[i] = fexp_score;
+          if (fexp_score == afl->shortest_dist[src_func] && 
+              fav_factor < afl->top_rated_explore[src_func]->exec_us * afl->top_rated_explore[src_func]->len) {
+            
+            // write_function_log(afl, afl->top_rated_explore[src_func], q, afl->shortest_dist[src_func], fexp_score / 100, i);
+            afl->top_rated_explore[src_func] = q; afl->shortest_dist[src_func] = fexp_score;
+
           }
+
         }
+      
       }
 
     }
+
   }
+
+  afl->last_explored_item = afl->queued_items;
 
 }
 
