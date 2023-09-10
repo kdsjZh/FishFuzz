@@ -51,7 +51,8 @@
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
 #include "llvm/Transforms/Instrumentation/AddressSanitizer.h"
 
-#define FUNC_SIZE         16 * 1024
+#define FUNC_SIZE_POW2 16
+#define FUNC_SIZE (1U << FUNC_SIZE_POW2)
 
 #define DEBUG_TYPE "ff-asan"
 
