@@ -1003,10 +1003,25 @@ void update_fishfuzz_states(afl_state_t *afl, u8* fish_map) {
 
     if (unlikely(targets_map[i])) {
 
+      if (!afl->reach_bits_count[i]) {
+
+        afl->last_reach_time = get_cur_time();
+        afl->current_targets_reached ++;
+
+      }
+
       afl->reach_bits_count[i] ++;
 
       if (unlikely(targets_map[i] == 2)) {
         
+
+        if (!afl->trigger_bits_count[i]) {
+
+          afl->last_trigger_time = get_cur_time();
+          afl->current_targets_triggered ++;
+
+        }
+
         afl->trigger_bits_count[i] ++;
 
       }
