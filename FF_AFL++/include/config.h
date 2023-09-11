@@ -173,8 +173,8 @@
 /* Maximum multiplier for the above (should be a power of two, beware
    of 32-bit int overflows): */
 
-// #define HAVOC_MAX_MULT 64U
-#define HAVOC_MAX_MULT 16U
+#define HAVOC_MAX_MULT 64U
+// #define HAVOC_MAX_MULT 16U
 #define HAVOC_MAX_MULT_MOPT 64U
 
 /* Absolute minimum number of havoc cycles (after all adjustments): */

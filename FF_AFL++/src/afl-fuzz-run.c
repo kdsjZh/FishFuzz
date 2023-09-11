@@ -1044,7 +1044,11 @@ common_fuzz_stuff(afl_state_t *afl, u8 *out_buf, u32 len) {
 
   fault = fuzz_run_target(afl, &afl->fsrv, afl->fsrv.exec_tmout);
 
-  if (afl->shm.fishfuzz_mode) update_fishfuzz_states(afl, afl->shm.fish_map);
+  if (unlikely(!(afl->fsrv.total_execs & 0xF))) {
+    
+    if (afl->shm.fishfuzz_mode) update_fishfuzz_states(afl, afl->shm.fish_map);
+
+  }
 
   if (afl->stop_soon) { return 1; }
 
@@ -1076,7 +1080,14 @@ common_fuzz_stuff(afl_state_t *afl, u8 *out_buf, u32 len) {
 
   /* This handles FAULT_ERROR for us: */
 
-  afl->queued_discovered += save_if_interesting(afl, out_buf, len, fault);
+  u8 is_new = save_if_interesting(afl, out_buf, len, fault);
+  afl->queued_discovered += is_new;
+  
+  if (is_new && (afl->fsrv.total_execs & 0xF)) {
+    
+    update_fishfuzz_states(afl, afl->shm.fish_map);
+
+  } 
 
   if (!(afl->stage_cur % afl->stats_update_freq) ||
       afl->stage_cur + 1 == afl->stage_max) {
