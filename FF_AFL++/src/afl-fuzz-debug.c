@@ -56,7 +56,7 @@ void write_fishfuzz_log(afl_state_t *afl, u8 prev_mode, u8 current_mode) {
           prev_mode_s, current_mode_s, afl->queue_cycle, afl->pending_favored, afl->queued_retryed, afl->queued_favored,
           afl->queued_fuzzed_favored, afl->queued_fuzzed_non_favored, afl->queued_fuzzed_retryed, afl->queued_items, func_cov, count_non_255_bytes(afl, afl->virgin_bits),
           afl->current_targets_reached, afl->current_targets_triggered);
-
+  fflush(afl->fish_debug_fd);
 }
 
 /*
