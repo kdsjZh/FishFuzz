@@ -93,8 +93,5 @@ RUN cd /FishFuzz/ && \
     PYTHON_INCLUDE=/ make && \
     # make -C dyncfg && \
     chmod +x distance/*.py && \
-    make install
-
-RUN wget https://raw.githubusercontent.com/llvm/llvm-project/5feb80e748924606531ba28c97fe65145c65372e/compiler-rt/lib/fuzzer/afl/afl_driver.cpp -O /FishFuzz/afl_driver.cpp && \
-    clang++ -stdlib=libc++ -std=c++11 -O2 -c /FishFuzz/afl_driver.cpp -o /FishFuzz/afl_driver.o && \
-    ar r /libAFLDriver.a /FishFuzz/afl_driver.o /FishFuzz/afl-compiler-rt.o
+    make install && \
+    cp utils/aflpp_driver/libAFLDriver.a /

@@ -148,6 +148,8 @@ def run_afl_fuzz(input_corpus,
     os.environ['AFL_NO_WARN_INSTABILITY'] = '1'
     os.environ['AFL_DISABLE_TRIM'] = '1'
     os.environ['AFL_CMPLOG_ONLY_NEW'] = '1'
+    os.environ['AFL_MAP_SIZE'] = '2621440'
+
 
     print('[run_afl_fuzz] Running target with afl-fuzz')
     command = [
@@ -163,9 +165,11 @@ def run_afl_fuzz(input_corpus,
     if additional_flags:
         command.extend(additional_flags)
 
-    dictionary_path = utils.get_dictionary_path(target_binary)
-    if dictionary_path:
-        command.extend(['-x', dictionary_path])
+    # dictionary_path = utils.get_dictionary_path(target_binary)
+    # if dictionary_path:
+    #     command.extend(['-x', dictionary_path])
+    if os.path.exists('./afl++.dict'):
+        flags += ['-x', './afl++.dict']
 
     #command += ['-x', './afl++.dict']
     #command += ['-c', cmplog_target_binary]
