@@ -79,6 +79,17 @@ void write_function_log(afl_state_t *afl, struct queue_entry *q1, struct queue_e
 
 }
 
+static u64 get_cur_time_cxx(void) {
+
+  struct timeval tv;
+  struct timezone tz;
+
+  gettimeofday(&tv, &tz);
+
+  return (tv.tv_sec * 1000ULL) + (tv.tv_usec / 1000);
+
+}
+
 /* wrapper to update top_rated_explore */
 void update_bitmap_score_explore(afl_state_t *afl) {
 
@@ -133,6 +144,7 @@ void update_bitmap_score_explore(afl_state_t *afl) {
         
           // write_function_log(afl, afl->top_rated_explore[src_func], q, afl->shortest_dist[src_func], fexp_score / 100, i);
           afl->top_rated_explore[src_func] = q; afl->shortest_dist[src_func] = fexp_score;
+          afl->last_func_time = get_cur_time_cxx(); afl->skip_inter_func = 0;
         
         }
         else {
@@ -141,6 +153,7 @@ void update_bitmap_score_explore(afl_state_t *afl) {
             
             // write_function_log(afl, afl->top_rated_explore[src_func], q, afl->shortest_dist[src_func], fexp_score / 100, i);
             afl->top_rated_explore[src_func] = q; afl->shortest_dist[src_func] = fexp_score;
+            afl->last_func_time = get_cur_time_cxx(); afl->skip_inter_func = 0;
 
           }
           if (fexp_score == afl->shortest_dist[src_func] && 
@@ -148,6 +161,7 @@ void update_bitmap_score_explore(afl_state_t *afl) {
             
             // write_function_log(afl, afl->top_rated_explore[src_func], q, afl->shortest_dist[src_func], fexp_score / 100, i);
             afl->top_rated_explore[src_func] = q; afl->shortest_dist[src_func] = fexp_score;
+            afl->last_func_time = get_cur_time_cxx(); afl->skip_inter_func = 0;
 
           }
 

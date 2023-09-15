@@ -538,9 +538,7 @@ void update_function_cov(afl_state_t *afl, char * fish_map) {
     if (fish_map[i] && !afl->virgin_funcs[i]) {
   
       afl->virgin_funcs[i] = 1;
-      afl->last_func_time = get_cur_time();
       afl->function_changed = 1;
-      afl->skip_inter_func = 0;
       afl->current_func_covered += 1;
   
     }
