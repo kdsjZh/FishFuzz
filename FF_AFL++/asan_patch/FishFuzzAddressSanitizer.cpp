@@ -199,8 +199,8 @@ bool FishFuzzASan::instrumentModule(Module &M) {
   GlobalVariable * AFLMapPtr = new GlobalVariable(M, PointerType::get(Int8Ty, 0), false,
                          GlobalValue::ExternalLinkage, 0, "__afl_fish_map");
 
-  SmallVector<BasicBlock *, 16> SanBlocks;
-  size_t vulnBlocks = 0, beginSanId = 0, curSanId = 0,
+  SmallVector<BasicBlock *, 16> SanBlocks, ReachBlocks, PruneReachBlocks;
+  size_t vulnBlocks = 0, beginSanId = 0, curSanId = 0, pruneVulnBlocks = 0,
          numFuncs = 0, beginFuncId = 0, curFuncId = 0;
 
 
@@ -211,16 +211,38 @@ bool FishFuzzASan::instrumentModule(Module &M) {
     if (isBlacklisted(&F) || F.empty()) continue;
 
     for (auto &BB : F) {
+
+      BasicBlock* pred = BB.getSinglePredecessor();
       
-      if (hasSanInstrument(BB) && BB.getSinglePredecessor()) {
+      if (hasSanInstrument(BB) && pred) {
 
         vulnBlocks += 1;
         SanBlocks.push_back(&BB);
+        ReachBlocks.push_back(pred);
       
       }
     
     }
   
+  }
+
+  /* Prune sanitizer targets on the same path */
+  for (auto &ReachBB: ReachBlocks) {
+
+    BasicBlock* predBB = ReachBB->getSinglePredecessor();
+
+    if (predBB) {
+
+      // if its pred is a ReachBlocks, it's redundant
+      if (std::find(ReachBlocks.begin(), ReachBlocks.end(), predBB) == ReachBlocks.end()) {
+      
+        PruneReachBlocks.push_back(ReachBB);
+        pruneVulnBlocks += 1;
+      
+      }
+    
+    }
+
   }
 
   std::string TempDir, FidFilename, TempFuncId, TempTargId;
@@ -235,7 +257,7 @@ bool FishFuzzASan::instrumentModule(Module &M) {
 
   /* Obtain the range of sanitizer ids */
 
-  beginSanId = getInstrumentId(TempTargId.c_str(), vulnBlocks);
+  beginSanId = getInstrumentId(TempTargId.c_str(), pruneVulnBlocks);
   curSanId = beginSanId;
 
   
@@ -244,6 +266,10 @@ bool FishFuzzASan::instrumentModule(Module &M) {
     /* Instrument the Sanitizer Reach Info */
 
     BasicBlock *ReachBB = SanBB->getSinglePredecessor();
+
+    if (std::find(PruneReachBlocks.begin(), PruneReachBlocks.end(), ReachBB) == PruneReachBlocks.end()) 
+      continue;
+    
     BasicBlock::iterator ReachIP = ReachBB->getFirstInsertionPt();
     IRBuilder<> ReachIRB(&(*ReachIP));
 
