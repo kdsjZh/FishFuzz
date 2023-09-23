@@ -156,13 +156,18 @@ void update_bitmap_score_explore(afl_state_t *afl) {
             afl->last_func_time = get_cur_time_cxx(); afl->skip_inter_func = 0;
 
           }
-          if (fexp_score == afl->shortest_dist[src_func] && 
-              fav_factor < afl->top_rated_explore[src_func]->exec_us * afl->top_rated_explore[src_func]->len) {
-            
-            // write_function_log(afl, afl->top_rated_explore[src_func], q, afl->shortest_dist[src_func], fexp_score / 100, i);
-            afl->top_rated_explore[src_func] = q; afl->shortest_dist[src_func] = fexp_score;
-            afl->last_func_time = get_cur_time_cxx(); afl->skip_inter_func = 0;
+          // if it's a same distance seed with smaller execution speed, only replace if this seed is not fuzzed
+          if (fexp_score == afl->shortest_dist[src_func]) {
 
+            if (!afl->top_rated_explore[src_func]->fuzz_level) {
+              if (fav_factor < afl->top_rated_explore[src_func]->exec_us * afl->top_rated_explore[src_func]->len) {
+              
+                // write_function_log(afl, afl->top_rated_explore[src_func], q, afl->shortest_dist[src_func], fexp_score / 100, i);
+                afl->top_rated_explore[src_func] = q; afl->shortest_dist[src_func] = fexp_score;
+                afl->last_func_time = get_cur_time_cxx(); afl->skip_inter_func = 0;
+
+              }
+            }
           }
 
         }
