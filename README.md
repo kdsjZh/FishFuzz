@@ -62,6 +62,12 @@ note that llvm-15 is not well tested.
 
 For llvm-15, replace the `SanitizerCoveragePCGuard.so.cc` with the aflpp latestest one. 
 
+## fuzzbench support
+
+We tested modified llvm-12 on main fuzzbench's program (commit 56caa83e81bc59a1389367c6bd29d46fd35d03e6).
+For coverage benchmark, 21/23 works (libpcap_fuzz_both, zlib_zlib_uncompress_fuzzer fails for linking reason).
+For bug benchmark, 4/5 works (bloaty_fuzz_target_52948c failed in runtime). 
+
 ## Contact
 
 If you have any questions & find any bugs, feel free to contact me via kdsjzh@gmail.com.
