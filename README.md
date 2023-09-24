@@ -55,6 +55,13 @@ TMP_DIR=$FF_TMP_DIR /Fish++/afl-fuzz -i /path/to/in -o /path/to/out -m none -t 1
 
 ```
 
+## LLVM-15 support
+
+Now we only provide llvm-12 (version we use in the paper) and llvm-15 (fuzzbench version) support, 
+note that llvm-15 is not well tested.
+
+For llvm-15, replace the `SanitizerCoveragePCGuard.so.cc` with the aflpp latestest one. 
+
 ## Contact
 
 If you have any questions & find any bugs, feel free to contact me via kdsjzh@gmail.com.
