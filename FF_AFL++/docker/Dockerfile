@@ -21,8 +21,8 @@ RUN mkdir -p /build && \
         --depth 1 \
         --branch binutils-2_40-branch \
         git://sourceware.org/git/binutils-gdb.git /llvm/binutils && \
-    cd /llvm/ && git apply /Fish++/asan_patch/FishFuzzASan.patch && \
-    cp /Fish++/asan_patch/FishFuzzAddressSanitizer.cpp llvm/lib/Transforms/Instrumentation/ && \
+    cd /llvm/ && git apply /Fish++/asan_patch/llvm-12/llvm-12-asan.diff && \
+    cp /Fish++/asan_patch/llvm-12/FishFuzzAddressSanitizer.cpp llvm/lib/Transforms/Instrumentation/ && \
     mkdir /llvm/binutils/build && cd /llvm/binutils/build && \
         CFLAGS="" CXXFLAGS="" CC=gcc CXX=g++ \
         ../configure --enable-gold --enable-plugins --disable-werror && \
