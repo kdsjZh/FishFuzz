@@ -515,15 +515,6 @@ static u8 check_if_text(afl_state_t *afl, struct queue_entry *q) {
 
 }
 
-void compress_target(u8* dst, u8* src) {
-
-  for (u32 i = 0; i < VMAP_COUNT; i ++) { 
-    
-    if (src[i]) dst[i >> 3] |= (1 << (i & 7));
-    
-  }
-
-}
 
 void update_function_cov(afl_state_t *afl, char * fish_map) {
   
@@ -618,12 +609,20 @@ void add_to_queue(afl_state_t *afl, u8 *fname, u32 len, u8 passed_det) {
 
     }
 
+    /* now target at all bbs */
     if (!q->trace_target) {
 
-      q->trace_target = ck_alloc(sizeof(u8) * VMAP_COUNT / 8);
-      compress_target(q->trace_target, afl->shm.fish_map + FUNC_SIZE);
+      if (!q->trace_mini) {
+
+        u32 len = (afl->fsrv.map_size >> 3);
+        q->trace_mini = ck_alloc(len);
+        minimize_bits(afl, q->trace_mini, afl->fsrv.trace_bits);
+      
+      }
+      q->trace_target = q->trace_mini;
 
     }
+
 
   }
 
@@ -780,7 +779,7 @@ void update_bitmap_score_target(afl_state_t *afl, struct queue_entry *q) {
   
   /* For every byte set in afl->fsrv.trace_bits[], see if there is a previous
      winner, and how it compares to us. */
-  for (i = 0; i < VMAP_COUNT; ++i) {
+  for (i = 0; i < afl->fsrv.map_size; ++i) {
 
     if (q->trace_target[i >> 3] & (1 << (i & 0x7))) {
 
@@ -932,7 +931,8 @@ void cull_queue_exploit(afl_state_t *afl) {
   #define TRACE_MINI_VISITED(trace_mini, idx) (trace_mini[idx >> 3] & (1 << (idx & 7)))
   
   // struct queue_entry* q;
-  static u8 temp_v[VMAP_COUNT >> 3];
+  u8 *temp_v = afl->map_tmp_buf;
+  u32 len = (afl->fsrv.map_size >> 3);
   
   u32 i;
 
@@ -945,7 +945,7 @@ void cull_queue_exploit(afl_state_t *afl) {
   if (!afl->exploit_threshould) return ;
 
   afl->target_changed = 0;
-  memset(temp_v, 255, VMAP_COUNT >> 3);
+  memset(temp_v, 255, len);
 
   afl->queued_favored = 0;
   afl->pending_favored = 0;
@@ -959,17 +959,18 @@ void cull_queue_exploit(afl_state_t *afl) {
   }
 
   // u32 total_visit_cnt = 0, total_n_bugs = 0;
-  for (i = 0; i < VMAP_COUNT; i++) {
-    if (temp_v[i >> 3] & (1 << (i & 7)) && afl->reach_bits_count[i]
-        && afl->reach_bits_count[i] <= afl->exploit_threshould && !afl->trigger_bits_count[i]) {
+  for (i = 0; i < afl->fsrv.map_size; i++) {
+    if ((temp_v[i >> 3] & (1 << (i & 7))) && afl->reach_bits_count[i]) {
 
+      if (afl->reach_bits_count[i] > afl->exploit_threshould) continue;
+      if (afl->trigger_bits_count[i]) continue;
       
       struct queue_entry *selected = afl->top_rated_exploit[i];
 
       if (!selected) continue; // PFATAL("top rated bug %d not found!", i);
       if (selected->favored) continue;
               
-      u32 k = VMAP_COUNT >> 3;
+      u32 k = len;
 
       while (k--) 
         if (selected->trace_target[k]) 
@@ -984,7 +985,7 @@ void cull_queue_exploit(afl_state_t *afl) {
   }
 
   u64 total_visit_cnt = 0, total_trigger_cnt = 0;
-  for (u32 i = 0; i < VMAP_COUNT; i ++) {
+  for (u32 i = 0; i < afl->fsrv.map_size; i ++) {
 
     if (afl->trigger_bits_count[i]) total_trigger_cnt += afl->trigger_bits_count[i];
     if (afl->reach_bits_count[i]) total_visit_cnt += afl->reach_bits_count[i];
@@ -1001,7 +1002,7 @@ void cull_queue_exploit(afl_state_t *afl) {
     if (rate < 50) {      
       /* pick up favored seeds that is not well explored */
       if (avg_violation_visit) {
-        for (i = 0; i < VMAP_COUNT; i++) {
+        for (i = 0; i < afl->fsrv.map_size; i++) {
           if (afl->reach_bits_count[i] && !afl->trigger_bits_count[i]
             && afl->reach_bits_count[i] <= afl->exploit_threshould) {
               struct queue_entry *selected = afl->top_rated_exploit[i];

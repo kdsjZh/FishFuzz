@@ -59,33 +59,6 @@ void write_fishfuzz_log(afl_state_t *afl, u8 prev_mode, u8 current_mode) {
   fflush(afl->fish_debug_fd);
 }
 
-/*
-void write_exploit_log(afl_state_t *afl, u32 exploit_threshould) {
-  
-  if (!afl->exploit_debug_log) {
-
-    afl->exploit_debug_log = alloc_printf("%s/exploit_debug.log", afl->out_dir);
-    afl->exploit_debug_fd = fopen(afl->exploit_debug_log, "w");
-
-  }
-
-  u64 current_ms = get_cur_time() - afl->start_time;
-
-  for (u32 i = 0; i < VMAP_COUNT; i ++) {
-    
-    if (afl->top_rated_exploit[i] && afl->reach_bits_count[i] < exploit_threshould) {
-
-      fprintf(afl->exploit_debug_fd, "[%02lld:%02lld:%02lld] update seed %s as favored for %d\n",
-          current_ms / 1000 / 3600, (current_ms / 1000 / 60) % 60, (current_ms / 1000) % 60,
-          afl->top_rated_exploit[i]->fname, i);
-
-    }
-
-  }
-
-
-}
-*/
 
 void write_cull_log(afl_state_t *afl) {
   
@@ -136,7 +109,7 @@ void write_exploit_log(afl_state_t *afl) {
   if (!afl->reach_bits_count) return ;
 
   u64 total_reach_cnt = 0, total_trigger_cnt = 0;
-  for (u32 i = 0; i < VMAP_COUNT; i ++) {
+  for (u32 i = 0; i < afl->fsrv.map_size; i ++) {
     if (afl->reach_bits_count[i]) total_reach_cnt += afl->reach_bits_count[i];
     if (afl->trigger_bits_count[i]) total_trigger_cnt += afl->trigger_bits_count[i];
   }

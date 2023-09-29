@@ -1995,6 +1995,7 @@ int main(int argc, char **argv_orig, char **envp) {
     afl->virgin_crash = ck_realloc(afl->virgin_crash, map_size);
     afl->var_bytes = ck_realloc(afl->var_bytes, map_size);
     afl->top_rated = ck_realloc(afl->top_rated, map_size * sizeof(void *));
+    afl->top_rated_exploit = ck_realloc(afl->top_rated_exploit, map_size * sizeof(void *));
     afl->clean_trace = ck_realloc(afl->clean_trace, map_size);
     afl->clean_trace_custom = ck_realloc(afl->clean_trace_custom, map_size);
     afl->first_trace = ck_realloc(afl->first_trace, map_size);
@@ -2033,6 +2034,8 @@ int main(int argc, char **argv_orig, char **envp) {
       afl->var_bytes = ck_realloc(afl->var_bytes, new_map_size);
       afl->top_rated =
           ck_realloc(afl->top_rated, new_map_size * sizeof(void *));
+      afl->top_rated_exploit = 
+          ck_realloc(afl->top_rated_exploit, new_map_size * sizeof(void *));
       afl->clean_trace = ck_realloc(afl->clean_trace, new_map_size);
       afl->clean_trace_custom =
           ck_realloc(afl->clean_trace_custom, new_map_size);
@@ -2094,6 +2097,8 @@ int main(int argc, char **argv_orig, char **envp) {
       afl->var_bytes = ck_realloc(afl->var_bytes, new_map_size);
       afl->top_rated =
           ck_realloc(afl->top_rated, new_map_size * sizeof(void *));
+      afl->top_rated_exploit = 
+          ck_realloc(afl->top_rated_exploit, new_map_size * sizeof(void *));
       afl->clean_trace = ck_realloc(afl->clean_trace, new_map_size);
       afl->clean_trace_custom =
           ck_realloc(afl->clean_trace_custom, new_map_size);

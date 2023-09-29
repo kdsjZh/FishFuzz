@@ -504,10 +504,17 @@ u8 calibrate_case(afl_state_t *afl, struct queue_entry *q, u8 *use_mem,
 
     }
 
+    /* now target at all bbs */
     if (!q->trace_target) {
 
-      q->trace_target = ck_alloc(sizeof(u8) * VMAP_COUNT / 8);
-      compress_target(q->trace_target, afl->shm.fish_map + FUNC_SIZE);
+      if (!q->trace_mini) {
+
+        u32 len = (afl->fsrv.map_size >> 3);
+        q->trace_mini = ck_alloc(len);
+        minimize_bits(afl, q->trace_mini, afl->fsrv.trace_bits);
+      
+      }
+      q->trace_target = q->trace_mini;
 
     }
 
@@ -989,17 +996,17 @@ void update_fishfuzz_states(afl_state_t *afl, u8* fish_map) {
 
   if (unlikely(!afl->trigger_bits_count)) {
   
-    afl->trigger_bits_count = ck_alloc(sizeof(u32) * VMAP_COUNT);
+    afl->trigger_bits_count = ck_alloc(sizeof(u32) * afl->fsrv.map_size);
   
   }
   if (unlikely(!afl->reach_bits_count)) {
   
-    afl->reach_bits_count = ck_alloc(sizeof(u32) * VMAP_COUNT);
+    afl->reach_bits_count = ck_alloc(sizeof(u32) * afl->fsrv.map_size);
   
   }
 
-  u8 *targets_map = fish_map + FUNC_SIZE;
-  for (u32 i = 0; i < VMAP_COUNT; i ++) {
+  u8 *targets_map = afl->fsrv.trace_bits;
+  for (u32 i = 0; i < afl->fsrv.map_size; i ++) {
 
     if (unlikely(targets_map[i])) {
 
@@ -1012,19 +1019,19 @@ void update_fishfuzz_states(afl_state_t *afl, u8* fish_map) {
 
       afl->reach_bits_count[i] ++;
 
-      if (unlikely(targets_map[i] == 2)) {
+      // if (unlikely(targets_map[i] == 2)) {
         
 
-        if (!afl->trigger_bits_count[i]) {
+      //   if (!afl->trigger_bits_count[i]) {
 
-          afl->last_trigger_time = get_cur_time();
-          afl->current_targets_triggered ++;
+      //     afl->last_trigger_time = get_cur_time();
+      //     afl->current_targets_triggered ++;
 
-        }
+      //   }
 
-        afl->trigger_bits_count[i] ++;
+      //   afl->trigger_bits_count[i] ++;
 
-      }
+      // }
       
     }
   }

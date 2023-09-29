@@ -191,7 +191,7 @@ void target_ranking(afl_state_t *afl) {
 
   if (!afl->reach_bits_count || !afl->trigger_bits_count) return ;
 
-  for (u32 i = 0; i < VMAP_COUNT; i ++) {
+  for (u32 i = 0; i < afl->fsrv.map_size; i ++) {
     
     if (afl->reach_bits_count[i] && !afl->trigger_bits_count[i]) {
       
