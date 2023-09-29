@@ -200,101 +200,17 @@ bool FishFuzzASan::instrumentModule(Module &M) {
                          GlobalValue::ExternalLinkage, 0, "__afl_fish_map");
 
   SmallVector<BasicBlock *, 16> SanBlocks, ReachBlocks, PruneReachBlocks;
-  size_t vulnBlocks = 0, beginSanId = 0, curSanId = 0, pruneVulnBlocks = 0,
-         numFuncs = 0, beginFuncId = 0, curFuncId = 0;
+  size_t numFuncs = 0, beginFuncId = 0, curFuncId = 0;
 
-
-  /* Obtain the sanitizer target blocks */
-
-  for (auto &F : M) {
-
-    if (isBlacklisted(&F) || F.empty()) continue;
-
-    for (auto &BB : F) {
-
-      BasicBlock* pred = BB.getSinglePredecessor();
-      
-      if (hasSanInstrument(BB) && pred) {
-
-        vulnBlocks += 1;
-        SanBlocks.push_back(&BB);
-        ReachBlocks.push_back(pred);
-      
-      }
-    
-    }
-  
-  }
-
-  /* Prune sanitizer targets on the same path */
-  for (auto &ReachBB: ReachBlocks) {
-
-    BasicBlock* predBB = ReachBB->getSinglePredecessor();
-
-    if (predBB) {
-
-      // if its pred is a ReachBlocks, it's redundant
-      if (std::find(ReachBlocks.begin(), ReachBlocks.end(), predBB) == ReachBlocks.end()) {
-      
-        PruneReachBlocks.push_back(ReachBB);
-        pruneVulnBlocks += 1;
-      
-      }
-    
-    }
-
-  }
-
-  std::string TempDir, FidFilename, TempFuncId, TempTargId;
+  std::string TempDir, FidFilename, TempFuncId;
   if (getenv("FF_TMP_DIR")) {
 
     TempDir = getenv("FF_TMP_DIR");
     FidFilename = TempDir + "/fid/" + encodePathStr(std::string(M.getModuleIdentifier())) + ".fid.txt";
     TempFuncId = TempDir + "/idlog/fid";
-    TempTargId = TempDir + "/idlog/targid";
     
   } else perror("Please set the FF_TMP_DIR before start!\n");
 
-  /* Obtain the range of sanitizer ids */
-
-  beginSanId = getInstrumentId(TempTargId.c_str(), pruneVulnBlocks);
-  curSanId = beginSanId;
-
-  
-  for (auto &SanBB : SanBlocks) {
-
-    /* Instrument the Sanitizer Reach Info */
-
-    BasicBlock *ReachBB = SanBB->getSinglePredecessor();
-
-    if (std::find(PruneReachBlocks.begin(), PruneReachBlocks.end(), ReachBB) == PruneReachBlocks.end()) 
-      continue;
-    
-    BasicBlock::iterator ReachIP = ReachBB->getFirstInsertionPt();
-    IRBuilder<> ReachIRB(&(*ReachIP));
-
-    LoadInst *ReachMapPtr = ReachIRB.CreateLoad(AFLMapPtr);
-    ReachMapPtr->setMetadata(M.getMDKindID("nosanitize"), MDNode::get(C, None));
-    Value *ReachCmpPtrIdx = ReachIRB.CreateGEP(ReachMapPtr, ConstantInt::get(Int32Ty, FUNC_SIZE + curSanId));
-
-    ReachIRB.CreateStore(ConstantInt::get(Int8Ty, 1), ReachCmpPtrIdx)
-      ->setMetadata(M.getMDKindID("nosanitize"), MDNode::get(C, None));   
-
-    /* Instrument the Sanitizer Trigger Info */
-
-    BasicBlock::iterator SanIP = SanBB->getFirstInsertionPt();
-    IRBuilder<> SanIRB(&(*SanIP));
-
-    LoadInst *SanMapPtr = SanIRB.CreateLoad(PointerType::get(Int8Ty, 0), AFLMapPtr);
-    SanMapPtr->setMetadata(M.getMDKindID("nosanitize"), MDNode::get(C, None));
-    Value *SanCmpPtrIdx = SanIRB.CreateGEP(SanMapPtr, ConstantInt::get(Int32Ty, FUNC_SIZE + curSanId));
-
-    SanIRB.CreateStore(ConstantInt::get(Int8Ty, 2), SanCmpPtrIdx)
-        ->setMetadata(M.getMDKindID("nosanitize"), MDNode::get(C, None));
-
-    curSanId += 1;
-    
-  }
 
   /* Obtain the range of function ids */
 

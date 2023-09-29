@@ -1,5 +1,5 @@
 diff --git a/.gitignore b/.gitignore
-index b33fbbf93237..fbf41767b7e7 100644
+index b33fbbf93..fbf41767b 100644
 --- a/.gitignore
 +++ b/.gitignore
 @@ -6,6 +6,8 @@
@@ -12,7 +12,7 @@ index b33fbbf93237..fbf41767b7e7 100644
  # File extensions to be ignored anywhere in the tree.
  #==============================================================================#
 diff --git a/clang/lib/CodeGen/BackendUtil.cpp b/clang/lib/CodeGen/BackendUtil.cpp
-index 52bcd971dc8c..66f37ac50b33 100644
+index 52bcd971d..c287ebba8 100644
 --- a/clang/lib/CodeGen/BackendUtil.cpp
 +++ b/clang/lib/CodeGen/BackendUtil.cpp
 @@ -84,6 +84,7 @@
@@ -48,17 +48,24 @@ index 52bcd971dc8c..66f37ac50b33 100644
    }
  
    if (LangOpts.Sanitize.has(SanitizerKind::KernelAddress)) {
-@@ -1298,6 +1310,8 @@ void EmitAssemblyHelper::EmitAssemblyWithNewPassManager(
-                                                      UseOdrIndicator));
-               MPM.addPass(createModuleToFunctionPassAdaptor(
-                   AddressSanitizerPass(CompileKernel, Recover, UseAfterScope)));
-+              MPM.addPass(FishFuzzASanPass());
-+              MPM.addPass(CallGraphDOTPrinterPass());
-             });
-       }
-     };
+@@ -1193,6 +1205,15 @@ void EmitAssemblyHelper::EmitAssemblyWithNewPassManager(
+ 
+   ModulePassManager MPM(CodeGenOpts.DebugPassManager);
+ 
++  if (getenv("USE_FF_INST")) {
++    // errs() << "Working with FF analysis!\n";
++    PB.registerOptimizerLastEPCallback(
++      [](ModulePassManager &MPM, PassBuilder::OptimizationLevel Level) {
++    MPM.addPass(FishFuzzASanPass());
++    MPM.addPass(CallGraphDOTPrinterPass());
++    });
++  }
++
+   if (!CodeGenOpts.DisableLLVMPasses) {
+     // Map our optimization levels into one of the distinct levels used to
+     // configure the pipeline.
 diff --git a/llvm/include/llvm/Analysis/CallPrinter.h b/llvm/include/llvm/Analysis/CallPrinter.h
-index 8d4159f3ddc0..68bd8a79a285 100644
+index 8d4159f3d..68bd8a79a 100644
 --- a/llvm/include/llvm/Analysis/CallPrinter.h
 +++ b/llvm/include/llvm/Analysis/CallPrinter.h
 @@ -14,6 +14,10 @@
@@ -91,7 +98,7 @@ index 8d4159f3ddc0..68bd8a79a285 100644
  
  #endif
 diff --git a/llvm/include/llvm/Transforms/Instrumentation/AddressSanitizer.h b/llvm/include/llvm/Transforms/Instrumentation/AddressSanitizer.h
-index 53ad0cbf9968..0646fbdc70db 100644
+index 53ad0cbf9..0646fbdc7 100644
 --- a/llvm/include/llvm/Transforms/Instrumentation/AddressSanitizer.h
 +++ b/llvm/include/llvm/Transforms/Instrumentation/AddressSanitizer.h
 @@ -132,6 +132,16 @@ private:
@@ -112,7 +119,7 @@ index 53ad0cbf9968..0646fbdc70db 100644
  FunctionPass *createAddressSanitizerFunctionPass(bool CompileKernel = false,
                                                   bool Recover = false,
 diff --git a/llvm/lib/Analysis/CallPrinter.cpp b/llvm/lib/Analysis/CallPrinter.cpp
-index 872a91ad7cbf..e971cc7ff129 100644
+index 872a91ad7..e971cc7ff 100644
 --- a/llvm/lib/Analysis/CallPrinter.cpp
 +++ b/llvm/lib/Analysis/CallPrinter.cpp
 @@ -24,6 +24,10 @@
@@ -184,7 +191,7 @@ index 872a91ad7cbf..e971cc7ff129 100644
 +  return PreservedAnalyses::all();
 +}
 diff --git a/llvm/lib/Transforms/Instrumentation/CMakeLists.txt b/llvm/lib/Transforms/Instrumentation/CMakeLists.txt
-index 3b29c3df6429..0175d0c9564c 100644
+index 3b29c3df6..0175d0c95 100644
 --- a/llvm/lib/Transforms/Instrumentation/CMakeLists.txt
 +++ b/llvm/lib/Transforms/Instrumentation/CMakeLists.txt
 @@ -1,4 +1,5 @@
