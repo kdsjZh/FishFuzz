@@ -652,11 +652,6 @@ u8 fuzz_one_original(afl_state_t *afl) {
   
   }
 
-  /* some debugging stuffs */
-  write_cull_log(afl);
-  write_exploit_log(afl);
-
-
   /* Skip deterministic fuzzing if exec path checksum puts this out of scope
      for this main instance. */
 
@@ -3072,6 +3067,10 @@ retry_splicing:
 #endif                                                     /* !IGNORE_FINDS */
 
   ret_val = 0;
+
+  /* some debugging stuffs */
+  write_cull_log(afl);
+  write_exploit_log(afl);
 
 /* we are through with this queue entry - for this iteration */
 abandon_entry:

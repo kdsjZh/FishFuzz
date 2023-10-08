@@ -70,11 +70,11 @@ void write_cull_log(afl_state_t *afl) {
   }
 
   u64 current_ms = get_cur_time() - afl->start_time;
-  fprintf(afl->cull_debug_fd, "[%02lld:%02lld:%02lld] origin takes %lld, explore takes %lld, exploit takes %lld, others %lld, update explore %lld.\n",
+  fprintf(afl->cull_debug_fd, "[%02lld:%02lld:%02lld] origin takes %lld, explore takes %lld, exploit takes %lld, others %lld, update explore %lld, totally fuzzed %lld.\n",
           current_ms / 1000 / 3600, (current_ms / 1000 / 60) % 60, (current_ms / 1000) % 60, 
           afl->log_cull_origin_time, afl->log_cull_explore_time, afl->log_cull_exploit_time, 
-          afl->log_cull_other_time, afl->log_update_explore_time);
-  
+          afl->log_cull_other_time, afl->log_update_explore_time, afl->log_total_fuzz_time);
+  fflush(afl->cull_debug_fd);
 
 }
 
@@ -95,6 +95,7 @@ void write_seed_selection_log(afl_state_t *afl, u8 skip_fuzz) {
           afl->queue_cur->favored ? (u8*)"favored" : (u8*)"non-favored",
           afl->current_entry, (afl->fish_seed_selection == INTER_FUNC_EXPLORE) ? (u8*) "explore" :
           (afl->fish_seed_selection == INTRA_FUNC_EXPLORE ? (u8*) "origin" : (u8*) "exploit"));
+  fflush(afl->seed_selec_fd);
 
 }
 
@@ -121,6 +122,7 @@ void write_exploit_log(afl_state_t *afl) {
   fprintf(afl->exploit_fd, "[%02lld:%02lld:%02lld] bug threshould %d, retry threshould %lld/%lld/%lld.\n",
           current_ms / 1000 / 3600, (current_ms / 1000 / 60) % 60, (current_ms / 1000) % 60,
           afl->exploit_threshould, avg_trigger, avg_reach, afl->fsrv.total_execs / afl->current_targets_reached);
+  fflush(afl->exploit_fd);
 
 }
 
@@ -138,5 +140,7 @@ void write_develop_log(afl_state_t *afl) {
           current_ms / 1000 / 3600, (current_ms / 1000 / 60) % 60, (current_ms / 1000) % 60,
           afl->current_func_covered, count_non_255_bytes(afl, afl->virgin_bits),
           afl->current_targets_reached, afl->current_targets_triggered);
+  fflush(afl->dev_fd);
+
 }
 

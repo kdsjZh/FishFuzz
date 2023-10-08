@@ -2246,6 +2246,7 @@ int main(int argc, char **argv_orig, char **envp) {
   u32 runs_in_current_cycle = (u32)-1;
   u32 prev_queued_items = 0;
   u8  skipped_fuzz;
+  u64 tmp_time_stamp = get_cur_time();
 
   #ifdef INTROSPECTION
   char ifn[4096];
@@ -2494,7 +2495,11 @@ int main(int argc, char **argv_orig, char **envp) {
 
       }
 
+      tmp_time_stamp = get_cur_time();
+
       skipped_fuzz = fuzz_one(afl);
+
+      if (unlikely(!skipped_fuzz)) { afl->log_total_fuzz_time += (get_cur_time() - tmp_time_stamp); }
 
       if (unlikely(!afl->stop_soon && exit_1)) { afl->stop_soon = 2; }
 
