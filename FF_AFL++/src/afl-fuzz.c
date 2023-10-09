@@ -2504,7 +2504,7 @@ int main(int argc, char **argv_orig, char **envp) {
                 !afl->queue_buf[explore_cur]->fuzz_level) {
               
               afl->current_entry = explore_cur;
-              afl->queue_cur = afl->queue_buf[afl->current_entry]
+              afl->queue_cur = afl->queue_buf[afl->current_entry];
               break;
             
             }
