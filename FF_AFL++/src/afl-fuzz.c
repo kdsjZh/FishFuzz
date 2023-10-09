@@ -2495,6 +2495,23 @@ int main(int argc, char **argv_orig, char **envp) {
 
       }
 
+      // if exploration, pick the next favored seed, else it will waste plenties of time at iteration.
+      if (afl->shm.fishfuzz_mode) {
+        if (afl->fish_seed_selection == INTER_FUNC_EXPLORE) {
+          // there must be favored, else will not be inter-explore mode
+          for (u32 explore_cur = 0; explore_cur < afl->queued_items; explore_cur ++) {
+            if (unlikely(afl->queue_buf[explore_cur]->favored) && 
+                !afl->queue_buf[explore_cur]->fuzz_level) {
+              
+              afl->current_entry = explore_cur;
+              afl->queue_cur = afl->queue_buf[afl->current_entry]
+              break;
+            
+            }
+          }
+        }
+      }
+
       tmp_time_stamp = get_cur_time();
 
       skipped_fuzz = fuzz_one(afl);
