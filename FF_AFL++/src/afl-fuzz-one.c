@@ -2086,6 +2086,16 @@ havoc_stage:
 
   if (afl->stage_max < HAVOC_MIN) { afl->stage_max = HAVOC_MIN; }
 
+#define FISHFUZZ_MIN_EXPLORE (16 * 1024)
+  
+  if (getenv("FF_MORE_EXP")) {
+    if (afl->fish_seed_selection == INTER_FUNC_EXPLORE) { 
+
+      if (afl->stage_max < FISHFUZZ_MIN_EXPLORE) afl->stage_max = FISHFUZZ_MIN_EXPLORE;
+
+    }
+  }
+
   temp_len = len;
 
   orig_hit_cnt = afl->queued_items + afl->saved_crashes;
