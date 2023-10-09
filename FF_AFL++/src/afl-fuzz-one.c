@@ -2091,7 +2091,8 @@ havoc_stage:
   if (getenv("FF_MORE_EXP")) {
     if (afl->fish_seed_selection == INTER_FUNC_EXPLORE) { 
 
-      if (afl->stage_max < FISHFUZZ_MIN_EXPLORE) afl->stage_max = FISHFUZZ_MIN_EXPLORE;
+      u32 fishfuzz_min_explore = atoi(getenv("FF_MORE_EXP")) * 1024;
+      if (afl->stage_max < fishfuzz_min_explore) afl->stage_max = fishfuzz_min_explore;//FISHFUZZ_MIN_EXPLORE;
 
     }
   }
