@@ -45,6 +45,9 @@ export CXX="$PATH_TO_FISHFUZZ/afl-c++ -fsanitize=address"
 # then we have all output log (callgraph, function id)
 # match the node name to function id, seems the node name in different modules are not duplicated
 python3 /Fish++/distance/match_function.py -i $FF_TMP_DIR
+# option 1
+python3 /Fish++/distance/calculate_all_distance.py -i $FF_TMP_DIR 
+# old option 
 # merge all module callgraph
 python3 /Fish++/distance/merge_callgraph.py -i $FF_TMP_DIR
 # calculate the distance between nodes, therefore we can get the distance between function ids

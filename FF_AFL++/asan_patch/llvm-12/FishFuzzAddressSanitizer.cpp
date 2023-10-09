@@ -66,7 +66,7 @@ struct FishFuzzASan {
   }
 
   bool instrumentModule(Module &M);
-  size_t getInstrumentId(const char *IdFile, size_t NewSize);
+  size_t getInstrumentId(const char *IdFile, size_t NewSize, std::string);
   bool hasSanInstrument(BasicBlock &BB);
   bool isBlacklisted(const Function *F);
   std::string encodePathStr(std::string Path);
@@ -77,7 +77,7 @@ private:
 };
 
 
-size_t FishFuzzASan::getInstrumentId(const char *IdFile, size_t NewSize) {
+size_t FishFuzzASan::getInstrumentId(const char *IdFile, size_t NewSize, std::string ModuleName) {
 
   int fd = open(IdFile, O_RDWR, 0666);
   if (fd < 0) {perror("failed open fd:"); exit(-1);}
@@ -103,9 +103,23 @@ size_t FishFuzzASan::getInstrumentId(const char *IdFile, size_t NewSize) {
   if (fidr.is_open()) {
 
     std::string line, last_line;
-    while (getline(fidr, line)) last_line = line;
+    while (getline(fidr, line)) {
 
-    std::size_t end_pos = last_line.find(",");
+      std::size_t str_pos = line.find(",");
+      std::string module_name = line.substr(0, str_pos);
+      printf("[DEBUG] line %s, module_name %s\n", line.c_str(), module_name.c_str());
+      if (module_name.compare(ModuleName) == 0) {
+        
+        std::size_t end_pos = line.rfind(",");
+        std::string begin_id_s = line.substr(str_pos + 1, end_pos - str_pos);
+        return atoi(begin_id_s.c_str());
+
+      }
+      last_line = line;
+    
+    }
+
+    std::size_t end_pos = last_line.rfind(",");
     std::string end_id_s = last_line.substr(end_pos + 1, last_line.length() - end_pos);
     current_start = atoi(end_id_s.c_str());
     current_end = current_start + NewSize + 1;
@@ -117,7 +131,7 @@ size_t FishFuzzASan::getInstrumentId(const char *IdFile, size_t NewSize) {
   fidw.open(IdFile, std::ios_base::app);
   if (fidw.is_open()) {
   
-    fidw << current_start << "," << current_end << std::endl;
+    fidw << ModuleName << ","<< current_start << "," << current_end << std::endl;
     fidw.close(); 
 
   } else { perror("failed open fid:"); exit(-1);}
@@ -224,7 +238,7 @@ bool FishFuzzASan::instrumentModule(Module &M) {
 
   if (!FuncMap.is_open()) { perror("Cannot open FuncMap :"); }
 
-  beginFuncId = getInstrumentId(TempFuncId.c_str(), numFuncs);
+  beginFuncId = getInstrumentId(TempFuncId.c_str(), numFuncs, std::string(M.getModuleIdentifier()));
   curFuncId = beginFuncId;
 
   for (auto &F : M) {
