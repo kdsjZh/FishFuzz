@@ -2479,36 +2479,33 @@ int main(int argc, char **argv_orig, char **envp) {
 
     do {
 
-      if (likely(!afl->old_seed_selection)) {
-
-        if (unlikely(prev_queued_items < afl->queued_items ||
-                     afl->reinit_table)) {
-
-          // we have new queue entries since the last run, recreate alias table
-          prev_queued_items = afl->queued_items;
-          create_alias_table(afl);
-
-        }
-
-        afl->current_entry = select_next_queue_entry(afl);
-        afl->queue_cur = afl->queue_buf[afl->current_entry];
-
-      }
-
       // if exploration, pick the next favored seed, else it will waste plenties of time at iteration.
-      if (afl->shm.fishfuzz_mode) {
-        if (afl->fish_seed_selection == INTER_FUNC_EXPLORE) {
-          // there must be favored, else will not be inter-explore mode
-          for (u32 explore_cur = 0; explore_cur < afl->queued_items; explore_cur ++) {
-            if (unlikely(afl->queue_buf[explore_cur]->favored) && 
-                !afl->queue_buf[explore_cur]->fuzz_level) {
-              
-              afl->current_entry = explore_cur;
-              afl->queue_cur = afl->queue_buf[afl->current_entry];
-              break;
-            
-            }
+      if (afl->shm.fishfuzz_mode && afl->fish_seed_selection == INTER_FUNC_EXPLORE) {
+        // there must be favored, else will not be inter-explore mode
+        for (u32 explore_cur = 0; explore_cur < afl->queued_items; explore_cur ++) {
+          if (unlikely(afl->queue_buf[explore_cur]->favored) && 
+              !afl->queue_buf[explore_cur]->fuzz_level) {
+            afl->current_entry = explore_cur;
+            afl->queue_cur = afl->queue_buf[afl->current_entry];
+            break;
           }
+        }
+      } else {
+
+        if (likely(!afl->old_seed_selection)) {
+
+          if (unlikely(prev_queued_items < afl->queued_items ||
+                      afl->reinit_table)) {
+
+            // we have new queue entries since the last run, recreate alias table
+            prev_queued_items = afl->queued_items;
+            create_alias_table(afl);
+
+          }
+
+          afl->current_entry = select_next_queue_entry(afl);
+          afl->queue_cur = afl->queue_buf[afl->current_entry];
+
         }
       }
 
