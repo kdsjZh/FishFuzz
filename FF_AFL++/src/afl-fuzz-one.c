@@ -2092,7 +2092,14 @@ havoc_stage:
     if (afl->fish_seed_selection == INTER_FUNC_EXPLORE) { 
 
       u32 fishfuzz_min_explore = atoi(getenv("FF_MORE_EXP")) * 1024;
-      if (afl->stage_max < fishfuzz_min_explore) afl->stage_max = fishfuzz_min_explore;//FISHFUZZ_MIN_EXPLORE;
+      if (afl->stage_max < fishfuzz_min_explore) {
+        
+        // expand perf_score as well, else the stage_max will be super super ig
+        float expand_rate = fishfuzz_min_explore / afl->stage_max;
+        perf_score *= expand_rate;
+        afl->stage_max *= expand_rate;
+
+      }
 
     }
   }
