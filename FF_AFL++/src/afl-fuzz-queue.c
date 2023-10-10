@@ -1046,7 +1046,7 @@ void cull_queue(afl_state_t *afl) {
   if (!afl->last_update_exec || get_cur_time() - afl->start_time < BEGIN_EXPLORE_TLIMIT || 
       afl->fsrv.total_execs - afl->last_update_exec >= MINIMAL_UPDATE_EXEC) {
     
-    tmp_time_log = get_cur_time()
+    tmp_time_log = get_cur_time();
     afl->last_update_exec = afl->fsrv.total_execs;
 
     /* for exploit */
