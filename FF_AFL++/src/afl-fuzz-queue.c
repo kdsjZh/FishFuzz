@@ -1036,6 +1036,8 @@ void cull_queue_exploit(afl_state_t *afl) {
 */
 void cull_queue(afl_state_t *afl) {
 
+  u64 tmp_time_log;
+
   if (get_cur_time() - afl->last_log_time > LOG_FREQUENCY_TLIMIT) {
     write_fishfuzz_log(afl, afl->fish_seed_selection, afl->fish_seed_selection);
   }
@@ -1044,12 +1046,15 @@ void cull_queue(afl_state_t *afl) {
   if (!afl->last_update_exec || get_cur_time() - afl->start_time < BEGIN_EXPLORE_TLIMIT || 
       afl->fsrv.total_execs - afl->last_update_exec >= MINIMAL_UPDATE_EXEC) {
     
+    tmp_time_log = get_cur_time()
     afl->last_update_exec = afl->fsrv.total_execs;
 
     /* for exploit */
     target_ranking(afl);
     /* for explore */
     update_bitmap_score_explore(afl);
+
+    afl->log_update_explore_time += (get_cur_time() - tmp_time_log);
 
   }
   
@@ -1119,7 +1124,7 @@ void cull_queue(afl_state_t *afl) {
     PFATAL("Invalid current mode given!");
   }
   
-  u64 tmp_time_log = get_cur_time();
+  tmp_time_log = get_cur_time();
   switch (afl->fish_seed_selection) {
     case INTRA_FUNC_EXPLORE : 
       cull_queue_origin(afl);

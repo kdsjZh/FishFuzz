@@ -70,10 +70,11 @@ void write_cull_log(afl_state_t *afl) {
   }
 
   u64 current_ms = get_cur_time() - afl->start_time;
-  fprintf(afl->cull_debug_fd, "[%02lld:%02lld:%02lld] origin takes %lld, explore takes %lld, exploit takes %lld, others %lld, update explore %lld, totally fuzzed %lld.\n",
-          current_ms / 1000 / 3600, (current_ms / 1000 / 60) % 60, (current_ms / 1000) % 60, 
+  fprintf(afl->cull_debug_fd, "[%02lld:%02lld:%02lld] currently at %d, origin/explore/exploit/others/all : %lld %lld %lld %lld %lld, update explore %lld, totally fuzzed %lld/%lld.\n",
+          current_ms / 1000 / 3600, (current_ms / 1000 / 60) % 60, (current_ms / 1000) % 60, afl->current_entry,
           afl->log_cull_origin_time, afl->log_cull_explore_time, afl->log_cull_exploit_time, 
-          afl->log_cull_other_time, afl->log_update_explore_time, afl->log_total_fuzz_time);
+          afl->log_cull_other_time, afl->log_total_cull_time, afl->log_update_explore_time, 
+          afl->log_total_fuzz_time, afl->log_total_iteration_time);
   fflush(afl->cull_debug_fd);
 
 }

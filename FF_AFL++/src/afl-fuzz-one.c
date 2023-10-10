@@ -3086,10 +3086,6 @@ retry_splicing:
 
   ret_val = 0;
 
-  /* some debugging stuffs */
-  write_cull_log(afl);
-  write_exploit_log(afl);
-
 /* we are through with this queue entry - for this iteration */
 abandon_entry:
 

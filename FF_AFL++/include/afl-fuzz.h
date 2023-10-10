@@ -732,6 +732,8 @@ typedef struct afl_state {
       log_cull_exploit_time,
       log_cull_other_time,
       log_total_fuzz_time,
+      log_total_iteration_time,
+      log_total_cull_time,
       log_update_explore_time;
 
 /* foreign sync */

@@ -2246,7 +2246,7 @@ int main(int argc, char **argv_orig, char **envp) {
   u32 runs_in_current_cycle = (u32)-1;
   u32 prev_queued_items = 0;
   u8  skipped_fuzz;
-  u64 tmp_time_stamp = get_cur_time();
+  u64 tmp_time_stamp1, tmp_time_stamp2;
 
   #ifdef INTROSPECTION
   char ifn[4096];
@@ -2263,7 +2263,11 @@ int main(int argc, char **argv_orig, char **envp) {
 
   while (likely(!afl->stop_soon)) {
 
+    tmp_time_stamp1 = get_cur_time();
+
     cull_queue(afl);
+
+    afl->log_total_cull_time += (get_cur_time() - tmp_time_stamp1);
 
     if (unlikely((!afl->old_seed_selection &&
                   runs_in_current_cycle > afl->queued_items) ||
@@ -2509,11 +2513,11 @@ int main(int argc, char **argv_orig, char **envp) {
         }
       }
 
-      tmp_time_stamp = get_cur_time();
+      tmp_time_stamp2 = get_cur_time();
 
       skipped_fuzz = fuzz_one(afl);
 
-      if (unlikely(!skipped_fuzz)) { afl->log_total_fuzz_time += (get_cur_time() - tmp_time_stamp); }
+      if (unlikely(!skipped_fuzz)) { afl->log_total_fuzz_time += (get_cur_time() - tmp_time_stamp2); }
 
       if (unlikely(!afl->stop_soon && exit_1)) { afl->stop_soon = 2; }
 
@@ -2568,7 +2572,10 @@ int main(int argc, char **argv_orig, char **envp) {
 
     }
 
+    afl->log_total_iteration_time += (get_cur_time() - tmp_time_stamp1);
     // write_develop_log(afl);
+    write_cull_log(afl);
+    write_exploit_log(afl);
 
   }
 
