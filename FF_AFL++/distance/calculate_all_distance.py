@@ -106,7 +106,7 @@ def merge_all_calldst(base_dir):
     for key, val in module_calldst.items():
       if key in all_calldst:
         print ('Collision: module %s, key %s' % (remove_prefix(filename, "dist"), key))
-        exit(-1)
+        # exit(-1)
       all_calldst[key] = val 
   with open("%s/calldst.json" % (base_dir), 'w') as f:
     json.dump(all_calldst, f)
