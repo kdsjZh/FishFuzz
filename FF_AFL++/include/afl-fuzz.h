@@ -696,6 +696,7 @@ typedef struct afl_state {
       last_trigger_time,
       last_func_time,
       start_func_time,
+      start_intra_time,
       last_update_exec;
 
   u8  function_changed,
