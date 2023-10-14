@@ -208,11 +208,11 @@ void target_ranking(afl_state_t *afl) {
 
     float rate = afl->pending_not_fuzzed / afl->queued_items;
     
-    if (rate < 0.2) rate = 0.2;
+    if (rate < 0.2) rate = 0.1;
     
-    else if (rate < 0.5) rate = 0.15;
+    else if (rate < 0.5) rate = 0.075;
     
-    else rate = 0.1;
+    else rate = 0.05;
     
     afl->exploit_threshould = reached_bugs[reached_bugs.size() * rate];
   
