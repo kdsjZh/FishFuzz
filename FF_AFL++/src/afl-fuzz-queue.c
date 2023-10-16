@@ -1060,15 +1060,22 @@ void cull_queue(afl_state_t *afl) {
   
   u8 should_skip = (afl->pending_favored + afl->queued_retryed == 0);
 
+  u64 inter_explore_limit = INTER_EXPLORE_TLIMIT,
+      intra_explore_limit = INTRA_EXPLORE_TLIMIT,
+      target_exploit_limit = TARGET_EXPLOIT_TLIMIT;
+
+  if (getenv("FF_TARGET_EXPLOIT")) target_exploit_limit = atoi(getenv("FF_TARGET_EXPLOIT"));
+  if (getenv("FF_INTER_EXPLORE")) inter_explore_limit = atoi(getenv("FF_INTER_EXPLORE"));
+  if (getenv("FF_INTRA_EXPLORE")) intra_explore_limit = atoi(getenv("FF_INTRA_EXPLORE"));
 
   if (afl->fish_seed_selection == INTER_FUNC_EXPLORE) {
 
-    if ((get_cur_time() - afl->start_func_time > BEGIN_EXPLORE_TLIMIT && get_cur_time() - afl->last_func_time > INTER_EXPLORE_TLIMIT) 
+    if ((get_cur_time() - afl->start_func_time > BEGIN_EXPLORE_TLIMIT && get_cur_time() - afl->last_func_time > inter_explore_limit) 
         || should_skip || afl->skip_inter_func) {
 
       if (should_skip) afl->skip_inter_func = 1;
 
-      if (get_cur_time() - afl->last_reach_time < INTRA_EXPLORE_TLIMIT) {
+      if (get_cur_time() - afl->last_reach_time < intra_explore_limit) {
         afl->score_changed = 1;
         afl->start_intra_time = get_cur_time();
         afl->last_reach_time = get_cur_time();
@@ -1086,7 +1093,7 @@ void cull_queue(afl_state_t *afl) {
   }
   else if (afl->fish_seed_selection == INTRA_FUNC_EXPLORE) {
 
-    if (get_cur_time() - afl->last_func_time < INTER_EXPLORE_TLIMIT && !afl->skip_inter_func) {
+    if (get_cur_time() - afl->last_func_time < inter_explore_limit && !afl->skip_inter_func) {
       afl->function_changed = 1;
       // afl->last_func_time = get_cur_time();
       afl->start_func_time = get_cur_time();
@@ -1095,8 +1102,7 @@ void cull_queue(afl_state_t *afl) {
     }
     else {
       // for intra-explore, we could accept non pending interesting seeds
-      if (get_cur_time() - afl->last_reach_time > INTRA_EXPLORE_TLIMIT ||
-          get_cur_time() - afl->start_intra_time > INTRA_EXPLORE_MAXIUM) {
+      if (get_cur_time() - afl->last_reach_time > intra_explore_limit) {
         afl->target_changed = 1;
         afl->last_trigger_time = get_cur_time();
         afl->fish_seed_selection = TARGET_EXPLOIT;
@@ -1107,7 +1113,7 @@ void cull_queue(afl_state_t *afl) {
   }
   else if (afl->fish_seed_selection == TARGET_EXPLOIT) {
 
-    if (get_cur_time() - afl->last_func_time < INTER_EXPLORE_TLIMIT && !afl->skip_inter_func) {
+    if (get_cur_time() - afl->last_func_time < inter_explore_limit && !afl->skip_inter_func) {
       afl->function_changed = 1;
       // afl->last_func_time = get_cur_time();
       afl->start_func_time = get_cur_time();
@@ -1115,7 +1121,7 @@ void cull_queue(afl_state_t *afl) {
       write_fishfuzz_log(afl, TARGET_EXPLOIT, INTER_FUNC_EXPLORE);
     }
 
-    if (get_cur_time() - afl->last_trigger_time > TARGET_EXPLOIT_TLIMIT || should_skip) {
+    if (get_cur_time() - afl->last_trigger_time > target_exploit_limit || should_skip) {
       afl->score_changed = 1;
       afl->start_intra_time = get_cur_time();
       afl->last_reach_time = get_cur_time();
