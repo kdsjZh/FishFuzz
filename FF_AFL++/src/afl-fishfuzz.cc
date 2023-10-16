@@ -17,7 +17,7 @@ extern "C" {
 #endif 
 
 std::map<u32, std::map<u32, u32>> func_dist_map;
-u8 unvisited_func_map[FUNC_SIZE];
+u8 unvisited_func_map[FUNC_SIZE], iterated_func_map[FUNC_SIZE];
 
 std::vector<u32> seed_length;
 
@@ -106,31 +106,40 @@ void update_bitmap_score_explore(afl_state_t *afl) {
   // we only explore each seeds once, so if there are no new seeds, we don't update
   if (afl->last_explored_item == afl->queued_items && afl->last_explored_item) return ;
 
-  for (u32 src_func = 0; src_func < FUNC_SIZE; src_func ++) {
+  for (u32 sid = afl->last_explored_item; sid < afl->queued_items; sid ++) {
 
-    if (!unvisited_func_map[src_func] || afl->virgin_funcs[src_func]) continue;
+    struct queue_entry *q = afl->queue_buf[sid];
+    u8 has_new_func = 0;
 
-    // now we don't remove explored functions 
-    // if (afl->top_rated_explore[src_func]) {
+    if (q->fuzz_level || !q->trace_func) continue;
 
-    //   if (afl->top_rated_explore[src_func]->fuzz_level) afl->top_rated_explore[src_func] = NULL;
-    
-    // }
-    // find the closest seed 
-    for (u32 sid = afl->last_explored_item; sid < afl->queued_items; sid ++) {
+    for (u32 i = 0; i < FUNC_SIZE; i ++) {
 
-      struct queue_entry *q = afl->queue_buf[sid];
+      if (unlikely(q->trace_func[i]) && unlikely(!iterated_func_map[i])) { has_new_func = 1; break; }
+        
+    }
 
-      if (q->fuzz_level || !q->trace_func) continue;
+    if (!has_new_func) continue;
 
-      u32 fexp_score = 0, shortest_dist = UNREACHABLE_DIST;
-      u64 fav_factor = q->len * q->exec_us;
+    u64 fav_factor = q->len * q->exec_us;
 
-      for (auto iter = func_dist_map[src_func].begin(); iter != func_dist_map[src_func].end(); iter ++) {
+    for (u32 dst_func = 0; dst_func < FUNC_SIZE; dst_func ++) {
+
+      if (!unvisited_func_map[dst_func] || afl->virgin_funcs[dst_func]) continue;
+
+      // now we don't remove explored functions 
+      // if (afl->top_rated_explore[dst_func]) {
+
+      //   if (afl->top_rated_explore[dst_func]->fuzz_level) afl->top_rated_explore[dst_func] = NULL;
+      
+      // }
+      u32 fexp_score = 0, shortest_dist = UNREACHABLE_DIST, src_func = 0;
+
+      for (auto iter = func_dist_map[dst_func].begin(); iter != func_dist_map[dst_func].end(); iter ++) {
       
         if (q->trace_func[iter->first]) {
 
-          if (iter->second < shortest_dist) shortest_dist = iter->second;
+          if (iter->second < shortest_dist) { src_func = iter->first; shortest_dist = iter->second; }
         
         }
       
@@ -140,31 +149,34 @@ void update_bitmap_score_explore(afl_state_t *afl) {
 
       if (fexp_score) {
 
-        if (!afl->top_rated_explore[src_func]) {
+        if (!afl->top_rated_explore[dst_func]) {
         
-          // write_function_log(afl, afl->top_rated_explore[src_func], q, afl->shortest_dist[src_func], fexp_score / 100, i);
-          afl->top_rated_explore[src_func] = q; afl->shortest_dist[src_func] = fexp_score;
+          // write_function_log(afl, afl->top_rated_explore[dst_func], q, afl->shortest_dist[dst_func], fexp_score / 100, i);
+          afl->top_rated_explore[dst_func] = q; afl->shortest_dist[dst_func] = fexp_score;
           afl->last_func_time = get_cur_time_cxx(); afl->skip_inter_func = 0;
+          iterated_func_map[src_func] = 1;
         
         }
         else {
         
-          if (fexp_score < afl->shortest_dist[src_func]) {
+          if (fexp_score < afl->shortest_dist[dst_func]) {
             
-            // write_function_log(afl, afl->top_rated_explore[src_func], q, afl->shortest_dist[src_func], fexp_score / 100, i);
-            afl->top_rated_explore[src_func] = q; afl->shortest_dist[src_func] = fexp_score;
+            // write_function_log(afl, afl->top_rated_explore[dst_func], q, afl->shortest_dist[dst_func], fexp_score / 100, i);
+            afl->top_rated_explore[dst_func] = q; afl->shortest_dist[dst_func] = fexp_score;
             afl->last_func_time = get_cur_time_cxx(); afl->skip_inter_func = 0;
+            iterated_func_map[src_func] = 1;
 
           }
           // if it's a same distance seed with smaller execution speed, only replace if this seed is not fuzzed
-          if (fexp_score == afl->shortest_dist[src_func]) {
+          if (fexp_score == afl->shortest_dist[dst_func]) {
 
-            if (!afl->top_rated_explore[src_func]->fuzz_level) {
-              if (fav_factor < afl->top_rated_explore[src_func]->exec_us * afl->top_rated_explore[src_func]->len) {
+            if (!afl->top_rated_explore[dst_func]->fuzz_level) {
+              if (fav_factor < afl->top_rated_explore[dst_func]->exec_us * afl->top_rated_explore[dst_func]->len) {
               
-                // write_function_log(afl, afl->top_rated_explore[src_func], q, afl->shortest_dist[src_func], fexp_score / 100, i);
-                afl->top_rated_explore[src_func] = q; afl->shortest_dist[src_func] = fexp_score;
+                // write_function_log(afl, afl->top_rated_explore[dst_func], q, afl->shortest_dist[dst_func], fexp_score / 100, i);
+                afl->top_rated_explore[dst_func] = q; afl->shortest_dist[dst_func] = fexp_score;
                 afl->last_func_time = get_cur_time_cxx(); afl->skip_inter_func = 0;
+                iterated_func_map[src_func] = 1;
 
               }
             }
@@ -173,7 +185,7 @@ void update_bitmap_score_explore(afl_state_t *afl) {
         }
       
       }
-
+    
     }
 
   }
