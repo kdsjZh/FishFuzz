@@ -154,7 +154,6 @@ void update_bitmap_score_explore(afl_state_t *afl) {
           // write_function_log(afl, afl->top_rated_explore[dst_func], q, afl->shortest_dist[dst_func], fexp_score / 100, i);
           afl->top_rated_explore[dst_func] = q; afl->shortest_dist[dst_func] = fexp_score;
           afl->last_func_time = get_cur_time_cxx(); afl->skip_inter_func = 0;
-          iterated_func_map[src_func] = 1;
         
         }
         else {
@@ -164,7 +163,6 @@ void update_bitmap_score_explore(afl_state_t *afl) {
             // write_function_log(afl, afl->top_rated_explore[dst_func], q, afl->shortest_dist[dst_func], fexp_score / 100, i);
             afl->top_rated_explore[dst_func] = q; afl->shortest_dist[dst_func] = fexp_score;
             afl->last_func_time = get_cur_time_cxx(); afl->skip_inter_func = 0;
-            iterated_func_map[src_func] = 1;
 
           }
           // if it's a same distance seed with smaller execution speed, only replace if this seed is not fuzzed
@@ -176,7 +174,6 @@ void update_bitmap_score_explore(afl_state_t *afl) {
                 // write_function_log(afl, afl->top_rated_explore[dst_func], q, afl->shortest_dist[dst_func], fexp_score / 100, i);
                 afl->top_rated_explore[dst_func] = q; afl->shortest_dist[dst_func] = fexp_score;
                 afl->last_func_time = get_cur_time_cxx(); afl->skip_inter_func = 0;
-                iterated_func_map[src_func] = 1;
 
               }
             }
@@ -187,6 +184,12 @@ void update_bitmap_score_explore(afl_state_t *afl) {
       }
     
     }
+
+    for (u32 i = 0; i < FUNC_SIZE; i ++) {
+
+      if (unlikely(q->trace_func[i])) iterated_func_map[i] = 1;
+      
+    } 
 
   }
 
