@@ -46,13 +46,13 @@ export CXX="$PATH_TO_FISHFUZZ/afl-c++ -fsanitize=address"
 # then we have all output log (callgraph, function id)
 # match the node name to function id, seems the node name in different modules are not duplicated
 python3 /Fish++/distance/match_function.py -i $FF_TMP_DIR
-# option 1
+# latest one
 python3 /Fish++/distance/calculate_all_distance.py -i $FF_TMP_DIR 
-# old option 
+# old option, discard
 # merge all module callgraph
-python3 /Fish++/distance/merge_callgraph.py -i $FF_TMP_DIR
+# python3 /Fish++/distance/merge_callgraph.py -i $FF_TMP_DIR
 # calculate the distance between nodes, therefore we can get the distance between function ids
-python3 /Fish++/distance/calculate_distance.py -i $FF_TMP_DIR
+# python3 /Fish++/distance/calculate_distance.py -i $FF_TMP_DIR
 
 # now we're ready to fuzz
 TMP_DIR=$FF_TMP_DIR /Fish++/afl-fuzz -i /path/to/in -o /path/to/out -m none -t 1000+ -D -- ./prog @@
@@ -66,7 +66,8 @@ note that llvm-15 is not well tested.
 
 llvm-15.0.0 (bf7f8d6fa6f460bf0a16ffec319cd71592216bf4)
 
-For llvm-15, replace the `SanitizerCoveragePCGuard.so.cc` with the aflpp latestest one. 
+For llvm-15, dockerfile should replace the `SanitizerCoveragePCGuard.so.cc` with the aflpp latestest one to make sure the compatibility 
+(aflpp commit 127c345161769c513275fed9d64de12536ee979d). 
 
 ## fuzzbench support
 

@@ -26,7 +26,7 @@ RUN mkdir -p /build && \
     make -j$(nproc) 
 
 ENV PATH="/llvm/build/bin:${PATH}"
-ENV LD_LIBRARY_PATH="/llvm/build/lib/x86_64-unknown-linux-gnu/c++/:${LD_LIBRARY_PATH}"
+ENV LD_LIBRARY_PATH="/llvm/build/lib/x86_64-unknown-linux-gnu/"
 
 
 # for fishfuzz dependencies
@@ -41,5 +41,7 @@ RUN apt install python3-pip -y && \
 # RUN git clone https://github.com/HexHive/FishFuzz /ff_repo && \
 #     mv /ff_repo/FF_AFL++ /Fish++ && rm -r /ff_repo
 
-RUN cd /Fish++/ && NO_NYX=1 make source-only && chmod +x scripts/*.py 
+RUN cd /Fish++/ && \
+    wget https://github.com/AFLplusplus/AFLplusplus/raw/127c345161769c513275fed9d64de12536ee979d/instrumentation/SanitizerCoveragePCGUARD.so.cc instrumentation && \
+    NO_NYX=1 make source-only && chmod +x scripts/*.py 
 
