@@ -37,6 +37,7 @@ FishFuzz is accepted in USENIX Security Symposium 2023 and will occur with the p
 cd $PROJECT_REPO
 # create temporary directory and output log files
 export TMP_DIR=$PWD/TEMP_xxx
+export FF_TMP_DIR=$TMP_DIR
 mkdir $TMP_DIR && pushd $TMP_DIR && mkdir cg fid idlog && pushd idlog && touch fid targid && popd && popd
 # set env and compile the program to fuzzz
 export CC="$PATH_TO_FISHFUZZ/afl-cc -fsanitize=address"
@@ -62,6 +63,8 @@ TMP_DIR=$FF_TMP_DIR /Fish++/afl-fuzz -i /path/to/in -o /path/to/out -m none -t 1
 
 Now we only provide llvm-12 (version we use in the paper) and llvm-15 (fuzzbench version) support, 
 note that llvm-15 is not well tested.
+
+llvm-15.0.0 (bf7f8d6fa6f460bf0a16ffec319cd71592216bf4)
 
 For llvm-15, replace the `SanitizerCoveragePCGuard.so.cc` with the aflpp latestest one. 
 

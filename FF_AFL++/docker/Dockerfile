@@ -1,41 +1,29 @@
 FROM ubuntu:20.04
 
-# for binutils & llvm-12 dependencies
+# for binutils & llvm-15 dependencies
 RUN apt update && \
     DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC \
     apt install git gcc g++ make cmake wget \
         libgmp-dev libmpfr-dev texinfo bison python3 -y 
 
-# build clang-12 with gold plugin
+# build clang-15 with gold plugin
 RUN apt install -y lsb-release wget software-properties-common
 
 COPY FishFuzz/FF_AFL++ /Fish++
 
-# build clang-12 with gold plugin
+# build clang-15
 RUN mkdir -p /build && \
     git clone \
-         --depth 1 \
-         --branch release/12.x \
         https://github.com/llvm/llvm-project /llvm && \
-    git clone \
-        --depth 1 \
-        --branch binutils-2_40-branch \
-        git://sourceware.org/git/binutils-gdb.git /llvm/binutils && \
-    cd /llvm/ && git apply /Fish++/asan_patch/llvm-12/llvm-12-asan.diff && \
-    cp /Fish++/asan_patch/llvm-12/FishFuzzAddressSanitizer.cpp llvm/lib/Transforms/Instrumentation/ && \
-    mkdir /llvm/binutils/build && cd /llvm/binutils/build && \
-        CFLAGS="" CXXFLAGS="" CC=gcc CXX=g++ \
-        ../configure --enable-gold --enable-plugins --disable-werror && \
-        make all-gold -j$(nproc) && \
+    cd /llvm/ && git checkout bf7f8d6fa6f460bf0a16ffec319cd71592216bf4 && \
+    git apply /Fish++/asan_patch/llvm-15.0/llvm-15-asan.diff && \
+    cp /Fish++/asan_patch/llvm-15.0/FishFuzzAddressSanitizer.cpp llvm/lib/Transforms/Instrumentation/ && \
     cd /llvm/ && mkdir build && cd build &&\
     CFLAGS="" CXXFLAGS="" CC=gcc CXX=g++ \
     cmake -DCMAKE_BUILD_TYPE=Release \
-          -DLLVM_BINUTILS_INCDIR=/llvm/binutils/include \
           -DLLVM_ENABLE_PROJECTS="compiler-rt;clang" \
           -DLLVM_ENABLE_RUNTIMES="libcxx;libcxxabi" ../llvm && \
-    make -j$(nproc) && \
-    cp /llvm/build/lib/LLVMgold.so //usr/lib/bfd-plugins/ && \
-    cp /llvm/build/lib/libLTO.so //usr/lib/bfd-plugins/
+    make -j$(nproc) 
 
 ENV PATH="/llvm/build/bin:${PATH}"
 ENV LD_LIBRARY_PATH="/llvm/build/lib/x86_64-unknown-linux-gnu/c++/:${LD_LIBRARY_PATH}"
@@ -46,7 +34,7 @@ RUN apt-get update && \
     apt-get install libboost-all-dev libjsoncpp-dev libgraphviz-dev \
     pkg-config libglib2.0-dev gcc-$(gcc --version|head -n1|sed 's/\..*//'|sed 's/.* //')-plugin-dev -y
 
-RUN apt install radare2 python3-pip -y && \
+RUN apt install python3-pip -y && \
     pip3 install networkx pydot r2pipe
 
 # # COPY Fish++ /Fish++ 
