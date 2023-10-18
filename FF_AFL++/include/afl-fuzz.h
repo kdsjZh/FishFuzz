@@ -180,7 +180,9 @@ struct queue_entry {
   u8 *trace_mini,                       /* Trace bytes, if kept             */
      *trace_func,                       /* Trace functions, if kept         */
      *trace_target;                     /* Trace sanitzers, if kept         */
-  u32 tc_ref;                           /* Trace bytes ref count            */
+  u32 tc_ref,                           /* Trace bytes ref count            */
+      tc_ref_intra,
+      tc_ref_exploit;
 
 #ifdef INTROSPECTION
   u32 bitsmap_size;

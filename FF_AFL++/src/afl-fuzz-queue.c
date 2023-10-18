@@ -100,6 +100,11 @@ void create_alias_table(afl_state_t *afl) {
 
       struct queue_entry *q = afl->queue_buf[i];
 
+      if (afl->shm.fishfuzz_mode && afl->fish_seed_selection == TARGET_EXPLOIT) 
+        q->tc_ref = q->tc_ref_exploit;
+      else 
+        q->tc_ref = q->tc_ref_intra;
+
       // disabled entries might have timings and bitmap values
       if (likely(!q->disabled)) {
 
@@ -739,7 +744,7 @@ void update_bitmap_score_origin(afl_state_t *afl, struct queue_entry *q) {
         /* Looks like we're going to win. Decrease ref count for the
            previous winner, discard its afl->fsrv.trace_bits[] if necessary. */
 
-        if (!--afl->top_rated[i]->tc_ref) {
+        if (!--afl->top_rated[i]->tc_ref_intra) {
 
           ck_free(afl->top_rated[i]->trace_mini);
           afl->top_rated[i]->trace_mini = 0;
@@ -751,7 +756,7 @@ void update_bitmap_score_origin(afl_state_t *afl, struct queue_entry *q) {
       /* Insert ourselves as the new winner. */
 
       afl->top_rated[i] = q;
-      ++q->tc_ref;
+      ++q->tc_ref_intra;
 
       if (!q->trace_mini) {
 
@@ -789,12 +794,17 @@ void update_bitmap_score_target(afl_state_t *afl, struct queue_entry *q) {
 
         if (fav_factor > afl->top_rated_exploit[i]->exec_us * afl->top_rated_exploit[i]->len) continue;
 
+        /* We're gonna to win */
+
+        --afl->top_rated_exploit[i]->tc_ref_exploit;
+
       }
 
       /* Insert ourselves as the new winner. */
 
       afl->top_rated_exploit[i] = q;
       afl->target_changed = 1;
+      ++q->tc_ref_exploit;
 
     }
 
