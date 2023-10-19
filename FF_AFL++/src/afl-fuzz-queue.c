@@ -840,6 +840,7 @@ void cull_queue_origin(afl_state_t *afl) {
 
   afl->queued_favored = 0;
   afl->pending_favored = 0;
+  afl->queued_retryed = 0;
 
   for (i = 0; i < afl->queued_items; i++) {
 
@@ -1009,19 +1010,19 @@ void cull_queue_exploit(afl_state_t *afl) {
   /* if we have well explored favored seeds */
   if (afl->queued_favored) {
     u32 rate = afl->pending_favored * 100 / afl->queued_favored;
-    if (rate < 50) {      
+    if (rate < 10) {
       /* pick up favored seeds that is not well explored */
       if (avg_violation_visit) {
         for (i = 0; i < afl->fsrv.map_size; i++) {
           if (afl->reach_bits_count[i] && !afl->trigger_bits_count[i]
-            && afl->reach_bits_count[i] <= afl->exploit_threshould) {
+            && afl->reach_bits_count[i] <= afl->exploit_threshould / 10) {
               struct queue_entry *selected = afl->top_rated_exploit[i];
 
               if (!selected) continue;
               /* only select already fuzzed favored seed and not marked as retry */
               if (!selected->favored || !selected->was_fuzzed || selected->retry) continue;
 
-              if (avg_violation_visit > afl->reach_bits_count[i] && rand_below(afl, 100) >= rate) {
+              if (avg_violation_visit > afl->reach_bits_count[i]) {
                 afl->queued_retryed ++;
                 selected->retry = 1;
               }

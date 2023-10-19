@@ -459,6 +459,13 @@ u8 fuzz_one_original(afl_state_t *afl) {
         
       }
 
+      /* 5% for retryed seeds */
+      if (afl->queue_cur->retry && afl->pending_favored) {
+
+        if (likely(rand_below(afl, 100) < SKIP_NFAV_OLD_PROB)) return 1;
+        
+      }
+
     } else {
       
       if ((afl->queue_cur->fuzz_level || !afl->queue_cur->favored) &&
