@@ -1143,6 +1143,12 @@ void cull_queue(afl_state_t *afl) {
   else {
     PFATAL("Invalid current mode given!");
   }
+
+  if (getenv("FF_NO_EXPLOIT")) {
+
+    if (afl->fish_seed_selection == TARGET_EXPLOIT) afl->fish_seed_selection = INTRA_FUNC_EXPLORE;
+  
+  }
   
   tmp_time_log = get_cur_time();
   switch (afl->fish_seed_selection) {
