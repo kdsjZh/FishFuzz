@@ -629,10 +629,15 @@ u8 fuzz_one_original(afl_state_t *afl) {
           !(afl->fsrv.total_execs % afl->queued_items) ||
           get_cur_time() - afl->last_find_time > 300000) {  // 300 seconds
 
-        if (input_to_state_stage(afl, in_buf, out_buf, len)) {
+        if (afl->fish_seed_selection == INTER_FUNC_EXPLORE ||
+            rand_below(afl, 100) > SKIP_NFAV_OLD_PROB) {
+        
+          if (input_to_state_stage(afl, in_buf, out_buf, len)) {
 
-          goto abandon_entry;
+            goto abandon_entry;
 
+          }
+        
         }
 
       }
