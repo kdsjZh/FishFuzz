@@ -126,6 +126,8 @@ void afl_state_init(afl_state_t *afl, uint32_t map_size) {
   afl->first_trace = ck_alloc(map_size);
   afl->map_tmp_buf = ck_alloc(map_size);
 
+  afl->no_exploitation = 0;
+
   afl->fsrv.use_stdin = 1;
   afl->fsrv.map_size = map_size;
   // afl_state_t is not available in forkserver.c

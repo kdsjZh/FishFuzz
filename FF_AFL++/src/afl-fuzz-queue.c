@@ -1078,6 +1078,7 @@ void cull_queue(afl_state_t *afl) {
   if (getenv("FF_TARGET_EXPLOIT")) target_exploit_limit = atoi(getenv("FF_TARGET_EXPLOIT"));
   if (getenv("FF_INTER_EXPLORE")) inter_explore_limit = atoi(getenv("FF_INTER_EXPLORE"));
   if (getenv("FF_INTRA_EXPLORE")) intra_explore_limit = atoi(getenv("FF_INTRA_EXPLORE"));
+  if (getenv("FF_NO_EXPLOIT")) afl->no_exploitation = 1;
 
   if (afl->fish_seed_selection == INTER_FUNC_EXPLORE) {
 
@@ -1144,7 +1145,7 @@ void cull_queue(afl_state_t *afl) {
     PFATAL("Invalid current mode given!");
   }
 
-  if (getenv("FF_NO_EXPLOIT")) {
+  if (afl->no_exploitation) {
 
     if (afl->fish_seed_selection == TARGET_EXPLOIT) afl->fish_seed_selection = INTRA_FUNC_EXPLORE;
   

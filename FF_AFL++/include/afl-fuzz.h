@@ -704,7 +704,8 @@ typedef struct afl_state {
   u8  function_changed,
       target_changed,
       skip_inter_func,
-      fish_seed_selection;
+      fish_seed_selection,
+      no_exploitation;
   
   u32 last_explored_item;
 
