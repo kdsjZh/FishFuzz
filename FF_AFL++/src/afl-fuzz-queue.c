@@ -1087,15 +1087,13 @@ void cull_queue(afl_state_t *afl) {
 
       if (should_skip) afl->skip_inter_func = 1;
 
-      if (get_cur_time() - afl->last_reach_time < intra_explore_limit) {
+      if (get_cur_time() - afl->last_reach_time < intra_explore_limit || afl->no_exploitation) {
         afl->score_changed = 1;
         afl->start_intra_time = get_cur_time();
         afl->last_reach_time = get_cur_time();
         afl->fish_seed_selection = INTRA_FUNC_EXPLORE;
         write_fishfuzz_log(afl, INTER_FUNC_EXPLORE, INTRA_FUNC_EXPLORE);
-      }
-
-      else {
+      } else {
         afl->target_changed = 1;
         afl->last_trigger_time = get_cur_time();
         afl->fish_seed_selection = TARGET_EXPLOIT;
@@ -1111,10 +1109,9 @@ void cull_queue(afl_state_t *afl) {
       afl->start_func_time = get_cur_time();
       afl->fish_seed_selection = INTER_FUNC_EXPLORE;
       write_fishfuzz_log(afl, INTRA_FUNC_EXPLORE, INTER_FUNC_EXPLORE);
-    }
-    else {
+    } else {
       // for intra-explore, we could accept non pending interesting seeds
-      if (get_cur_time() - afl->last_reach_time > intra_explore_limit) {
+      if (get_cur_time() - afl->last_reach_time > intra_explore_limit && !afl->no_exploitation) {
         afl->target_changed = 1;
         afl->last_trigger_time = get_cur_time();
         afl->fish_seed_selection = TARGET_EXPLOIT;
@@ -1143,12 +1140,6 @@ void cull_queue(afl_state_t *afl) {
   }
   else {
     PFATAL("Invalid current mode given!");
-  }
-
-  if (afl->no_exploitation) {
-
-    if (afl->fish_seed_selection == TARGET_EXPLOIT) afl->fish_seed_selection = INTRA_FUNC_EXPLORE;
-  
   }
   
   tmp_time_log = get_cur_time();
