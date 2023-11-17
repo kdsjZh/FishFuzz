@@ -744,12 +744,12 @@ void update_bitmap_score_origin(afl_state_t *afl, struct queue_entry *q) {
         /* Looks like we're going to win. Decrease ref count for the
            previous winner, discard its afl->fsrv.trace_bits[] if necessary. */
 
-        if (!--afl->top_rated[i]->tc_ref_intra) {
+        // if (!--afl->top_rated[i]->tc_ref_intra) {
 
-          ck_free(afl->top_rated[i]->trace_mini);
-          afl->top_rated[i]->trace_mini = 0;
+        //   ck_free(afl->top_rated[i]->trace_mini);
+        //   afl->top_rated[i]->trace_mini = 0;
 
-        }
+        // }
 
       }
 
