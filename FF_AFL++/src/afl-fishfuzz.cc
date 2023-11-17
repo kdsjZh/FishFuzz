@@ -193,6 +193,19 @@ void update_bitmap_score_explore(afl_state_t *afl) {
 
   }
 
+  if (afl->last_explored_item) 
+    for (u32 i = 0; i < afl->last_explored_item; i ++) {
+
+      if (afl->queue_buf[i]->trace_func) {
+        
+        // avoid consuming too much memory
+        ck_free(afl->queue_buf[i]->trace_func);
+        afl->queue_buf[i]->trace_func = NULL;
+
+      }
+
+    }
+
   afl->last_explored_item = afl->queued_items;
 
 }
