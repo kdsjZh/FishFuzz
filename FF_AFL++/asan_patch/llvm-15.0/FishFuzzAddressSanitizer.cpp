@@ -107,7 +107,7 @@ size_t FishFuzzASan::getInstrumentId(const char *IdFile, size_t NewSize, std::st
 
       std::size_t str_pos = line.find(",");
       std::string module_name = line.substr(0, str_pos);
-      printf("[DEBUG] line %s, module_name %s\n", line.c_str(), module_name.c_str());
+      // printf("[DEBUG] line %s, module_name %s\n", line.c_str(), module_name.c_str());
       if (module_name.compare(ModuleName) == 0) {
         
         std::size_t end_pos = line.rfind(",");
